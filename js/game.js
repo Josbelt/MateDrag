@@ -99,7 +99,16 @@ const studentModalEl = document.getElementById("studentModal");
 const studentFormEl = document.getElementById("studentForm");
 const studentNameInputEl = document.getElementById("studentNameInput");
 const studentNameDisplayEl = document.getElementById("studentNameDisplay");
+const menuStudentNameDisplayEl = document.getElementById("menuStudentNameDisplay");
 const changeStudentBtnEl = document.getElementById("changeStudentBtn");
+const menuScreenEl = document.getElementById("menuScreen");
+const gameScreenEl = document.getElementById("gameScreen");
+const backToMenuBtnEl = document.getElementById("backToMenuBtn");
+const playPhaseBtns = Array.from(document.querySelectorAll(".playPhaseBtn"));
+const menuPhaseCards = Array.from(document.querySelectorAll("[data-phase-card]"));
+const menuNavBtns = Array.from(document.querySelectorAll(".menuNavBtn"));
+const adventureSteps = Array.from(document.querySelectorAll(".adventureTrack .step"));
+const soundButtonEl = document.querySelector(".soundButton");
 
 const STORAGE_KEYS = {
   currentStudent: "matedrag.currentStudent",
@@ -109,11 +118,13 @@ const STORAGE_KEYS = {
 
 let studentName = "";
 let sessionLog = null;
+let soundEnabled = true;
 
 clearBtnEl.addEventListener("click", clearAnswer);
 checkBtnEl.addEventListener("click", checkAnswer);
 document.getElementById("newGameBtn").addEventListener("click", newGame);
 changeStudentBtnEl.addEventListener("click", () => openStudentModal(true));
+backToMenuBtnEl.addEventListener("click", () => showMainMenu("inicio"));
 numericAnswerEl.addEventListener("input", () => {
   const value = Number.parseInt(numericAnswerEl.value, 10);
   game.answer = Number.isFinite(value) ? value : 0;
@@ -128,6 +139,22 @@ showErrorsBtn.addEventListener("click", () => {
 exportLogBtn.addEventListener("click", exportSessionLog);
 copyLinkBtn.addEventListener("click", copyShareLink);
 studentFormEl.addEventListener("submit", handleStudentSubmit);
+
+playPhaseBtns.forEach((btn) => {
+  btn.addEventListener("click", () => startPhaseFromMenu(btn.dataset.phase));
+});
+
+menuNavBtns.forEach((btn) => {
+  btn.addEventListener("click", () => handleMenuNav(btn.dataset.menu));
+});
+
+if (soundButtonEl) {
+  soundButtonEl.addEventListener("click", () => {
+    soundEnabled = !soundEnabled;
+    soundButtonEl.textContent = soundEnabled ? "🔊" : "🔇";
+    soundButtonEl.setAttribute("aria-label", soundEnabled ? "Sonido activado" : "Sonido desactivado");
+  });
+}
 
 dropzoneEl.addEventListener("dragover", (e) => {
   e.preventDefault();
@@ -366,8 +393,60 @@ function getSessionByStudent(student) {
   return sessions.find((session) => session.studentName === student) || null;
 }
 
+function setMainNavActive(target) {
+  menuNavBtns.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.menu === target);
+  });
+}
+
+function showMainMenu(activeNav = "inicio") {
+  if (drawState.active) stopGraphicDraw();
+  menuScreenEl.hidden = false;
+  gameScreenEl.hidden = true;
+  setMainNavActive(activeNav);
+  updatePhaseButtons();
+}
+
+function showGameView(activeNav = "juegos") {
+  menuScreenEl.hidden = true;
+  gameScreenEl.hidden = false;
+  setMainNavActive(activeNav);
+}
+
+function handleMenuNav(action) {
+  if (action === "juegos") {
+    showGameView("juegos");
+    if (!game.questions.length) newGame();
+    return;
+  }
+
+  if (action === "progreso") {
+    showGameView("progreso");
+    renderSessionLog();
+    errorsPanel.style.display = "block";
+    return;
+  }
+
+  showMainMenu(action || "inicio");
+}
+
+function startPhaseFromMenu(targetPhase) {
+  const idx = PHASES.indexOf(targetPhase);
+  if (idx < 0 || idx > unlockedIndex) return;
+  if (!studentName) {
+    openStudentModal();
+    return;
+  }
+
+  setPhase(targetPhase);
+  showGameView("juegos");
+}
+
 function setStudentNameUI() {
   studentNameDisplayEl.textContent = studentName || "Sin registrar";
+  if (menuStudentNameDisplayEl) {
+    menuStudentNameDisplayEl.textContent = studentName || "Sin registrar";
+  }
 }
 
 function escapeHtml(value) {
@@ -539,6 +618,7 @@ function beginStudentSession(name) {
   resetPhaseUI();
   updatePhaseButtons();
   newGame();
+  showMainMenu("inicio");
 }
 
 function handleStudentSubmit(event) {
@@ -1559,6 +1639,25 @@ function updatePhaseButtons() {
     btn.disabled = idx > unlockedIndex;
     btn.classList.toggle("active", p === phase);
   });
+
+  menuPhaseCards.forEach((card) => {
+    const p = card.dataset.phaseCard;
+    const idx = PHASES.indexOf(p);
+    const isLocked = idx > unlockedIndex;
+    card.classList.toggle("locked", isLocked);
+    card.classList.toggle("active", p === phase);
+  });
+
+  playPhaseBtns.forEach((btn) => {
+    const idx = PHASES.indexOf(btn.dataset.phase);
+    const isLocked = idx > unlockedIndex;
+    btn.disabled = isLocked;
+    btn.textContent = isLocked ? "Bloqueado" : "Jugar";
+  });
+
+  adventureSteps.forEach((step, index) => {
+    step.classList.toggle("active", index <= unlockedIndex);
+  });
 }
 
 function initApp() {
@@ -1567,7 +1666,9 @@ function initApp() {
   if (hydrateStudentSession()) {
     renderSessionLog();
     newGame();
+    showMainMenu("inicio");
   } else {
+    showMainMenu("inicio");
     openStudentModal();
   }
 }
