@@ -1,0 +1,854 @@
+/* =====================================================
+   FUENTES (online + offline ya preparado)
+===================================================== */
+@font-face {
+  font-family: "Baloo2Local";
+  src: url("../fonts/Baloo2-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Baloo2Local";
+  src: url("../fonts/Baloo2-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "NunitoLocal";
+  src: url("../fonts/Nunito-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "NunitoLocal";
+  src: url("../fonts/Nunito-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* =====================================================
+   VARIABLES – GAMA DEL USUARIO
+===================================================== */
+:root{
+  --font-title: "Baloo 2", "Baloo2Local", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --font-body: "Nunito", "NunitoLocal", system-ui, sans-serif;
+
+  /* Gama exacta solicitada */
+  --c1:#62B6E3; /* celeste */
+  --c2:#6264E3; /* azul violeta */
+  --c3:#628DE3; /* azul medio */
+  --c4:#62DEE3; /* celeste claro */
+  --c5:#8A62E3; /* violeta */
+  --c6:#C4CFE5; /* fondo claro */
+
+  --card:#f8fbff;
+  --ink:#1f2933;
+  --muted:#4a5568;
+  --line:#00000018;
+
+  --ok:#1f8a4c;
+  --bad:#c43a3a;
+
+  --shadow: 0 12px 24px #00000017;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+
+body{
+  margin:0;
+  font-family: var(--font-body);
+  color:var(--ink);
+  background: linear-gradient(180deg, #7fd5fb 0%, #9ce7ff 55%, #f7d79c 56%, #f2c87c 100%);
+  overflow-x:hidden;
+}
+
+/* =====================================================
+   FONDO ANIMADO CON LA GAMA
+===================================================== */
+.bg{
+  position:fixed;
+  inset:-40px;
+  pointer-events:none;
+  background:
+    radial-gradient(220px 220px at 10% 20%, var(--c3), transparent 65%),
+    radial-gradient(260px 260px at 85% 25%, var(--c4), transparent 65%),
+    radial-gradient(240px 240px at 30% 85%, var(--c6), transparent 65%),
+    radial-gradient(300px 300px at 90% 90%, var(--c5), transparent 65%);
+  filter: blur(10px) saturate(1.15);
+  opacity:.55;
+  animation: floaty 14s ease-in-out infinite alternate;
+}
+
+@keyframes floaty{
+  from{ transform: translate(-12px,-10px) scale(1.02); }
+  to{ transform: translate(14px,12px) scale(1.05); }
+}
+
+/* =====================================================
+   LAYOUT
+===================================================== */
+.app{
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 18px 28px;
+}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.phasebar-wrap{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+
+.gamebar{
+  background: linear-gradient(180deg, #4ec2f0, #33b1e4);
+  border: 3px solid #8adfff;
+  border-radius: 18px;
+  padding: 10px 14px;
+  box-shadow: 0 10px 18px #0000001d;
+}
+
+.hud{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.progressTrack{
+  width: 210px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ffffff66;
+  border:1px solid #00000020;
+  overflow:hidden;
+}
+
+.progressFill{
+  display:block;
+  width: 42%;
+  height: 100%;
+  background: linear-gradient(90deg, #ffd04a, #95d64c, #4fc7ef, #8f7cff);
+}
+
+.game-tabs{
+  background:#ffffffbf;
+  border:2px solid #9ed8ef;
+  border-radius:14px;
+  padding:8px;
+}
+
+h1{
+  font-family: var(--font-title);
+  font-size: 40px;
+  margin:0;
+  color:#13315f;
+  text-shadow: 0 2px 0 #ffffffaa;
+}
+
+.pill{
+  background:#f3fbff;
+  border:2px solid #79caea;
+  padding:8px 14px;
+  border-radius:999px;
+  box-shadow: 0 4px 10px #00000014;
+  font-weight:700;
+}
+
+/* =====================================================
+   CARD
+===================================================== */
+.card{
+  background: var(--card);
+  border-radius: 20px;
+  padding: 14px;
+  box-shadow: var(--shadow);
+  border:2px solid #b9e4f3;
+}
+
+.prompt{
+  margin-bottom:16px;
+}
+
+.visual{
+  font-family: var(--font-title);
+  font-size: 28px;
+  font-weight: 700;
+  color:#1b2a4a;
+}
+
+.math{
+  font-size:14px;
+  color:var(--muted);
+  font-weight:700;
+}
+
+/* =====================================================
+   CONCRETA
+===================================================== */
+.visual.concrete{
+  display:none;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+  font-size: 18px;
+}
+
+.concreteSub{
+  display:none;
+  margin-top:10px;
+  padding:10px;
+  border-radius:16px;
+  border:2px dashed var(--c3);
+  background: var(--c6);
+}
+
+.dot-group{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+}
+
+.dot{
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:#1b2a4a;
+  display:inline-block;
+}
+
+.dot-rows{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.dot-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.dot-groups{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+}
+
+.groups{
+  gap:12px;
+  margin-top:8px;
+}
+
+.group{
+  background:#ffffff;
+  border:2px dashed var(--c2);
+  border-radius:16px;
+  padding:10px;
+  min-width:150px;
+  flex:1 1 150px;
+}
+
+.group.dragover{
+  background: var(--c4);
+}
+
+.group-title{
+  font-family: var(--font-title);
+  font-size:14px;
+  margin-bottom:6px;
+}
+
+.group-body{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  min-height:54px;
+}
+
+.obj-group{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+
+.obj-item{
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  border:2px solid var(--c1);
+  background:#fff;
+  display:grid;
+  place-items:center;
+  box-shadow: 0 8px 14px #00000018;
+  position:relative;
+  cursor:default;
+}
+
+.obj-item.clickable{
+  cursor:pointer;
+}
+
+.obj-item img{
+  width:28px;
+  height:28px;
+}
+
+.obj-item.crossed{
+  opacity:0.45;
+}
+
+.obj-item.crossed::after{
+  content:"";
+  position:absolute;
+  inset:6px;
+  border-top:4px solid #b83a3a;
+  transform: rotate(-18deg);
+}
+
+.concrete-hint{
+  font-size:13px;
+  color:var(--muted);
+  margin-top:6px;
+  font-weight:700;
+}
+
+/* =====================================================
+   GRAFICA - DIBUJO
+===================================================== */
+.graphicWorkspace{
+  margin-top:12px;
+  display:none;
+  background:#ffffffc7;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:12px;
+}
+
+.drawTools{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.drawToolsLabel{
+  font-weight:700;
+  color:#1b2a4a;
+}
+
+.shapeBtn{
+  font-family: var(--font-title);
+  border:2px solid var(--c3);
+  background:#fff;
+  border-radius:12px;
+  padding:8px 12px;
+  cursor:pointer;
+  font-size:14px;
+}
+
+.shapeBtn.active{
+  background: linear-gradient(135deg, var(--c2), var(--c5));
+  color:#fff;
+  border-color: transparent;
+}
+
+.drawTask{
+  margin-top:10px;
+}
+
+.drawStatement{
+  margin:0 0 6px 0;
+  font-weight:700;
+  color:#1b2a4a;
+}
+
+.drawZone{
+  min-height:130px;
+  border:2px dashed var(--c2);
+  border-radius:14px;
+  background:
+    linear-gradient(0deg, #ffffff, #ffffff),
+    linear-gradient(90deg, #00000010 1px, transparent 1px),
+    linear-gradient(#00000010 1px, transparent 1px);
+  background-size: auto, 22px 22px, 22px 22px;
+  background-position: 0 0, 0 0, 0 0;
+  position:relative;
+  overflow:hidden;
+  cursor:crosshair;
+  user-select:none;
+}
+
+.drawCount{
+  margin-top:6px;
+  font-size:14px;
+  color:var(--muted);
+  font-weight:700;
+}
+
+.draw-shape{
+  position:absolute;
+  border:2px solid #274164;
+  background:#62b6e355;
+  pointer-events:auto;
+}
+
+.draw-shape.preview{
+  opacity:0.55;
+  pointer-events:none;
+}
+
+.draw-shape.circle{
+  border-radius:50%;
+}
+
+.draw-shape.star{
+  border:none;
+  background:transparent;
+}
+
+.draw-shape.star svg{
+  width:100%;
+  height:100%;
+  display:block;
+  pointer-events:none;
+  overflow:visible;
+}
+
+.draw-shape.star .star-fill{
+  fill:#cfe5f3;
+  stroke:#274164;
+  stroke-width:2;
+  vector-effect: non-scaling-stroke;
+}
+
+.draw-shape.removed{
+  opacity:0.35;
+  border-style:dashed;
+  background:#c43a3a33;
+}
+
+.draw-shape.star.removed .star-fill{
+  fill:#c43a3a33;
+  stroke-dasharray:6 4;
+}
+
+/* =====================================================
+   PANELS
+===================================================== */
+.row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+@media (max-width:860px){
+  .row{ grid-template-columns:1fr; }
+}
+
+.panel{
+  background:#fffefb;
+  border-radius:18px;
+  padding:14px;
+  border:2px solid #e2d0a5;
+}
+
+.panel h2{
+  font-family: var(--font-title);
+  font-size:16px;
+  margin:0 0 6px 0;
+}
+
+.hint{
+  font-size:13px;
+  color:var(--muted);
+}
+
+/* =====================================================
+   TOKENS
+===================================================== */
+.tokens{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:10px;
+  border-radius:16px;
+  border:2px dashed var(--c3);
+  background: var(--c6);
+}
+
+.token{
+  width:54px;
+  height:54px;
+  border-radius:18px;
+  background:#fff;
+  border:2px solid var(--c1);
+  display:grid;
+  place-items:center;
+  box-shadow: 0 10px 18px #00000018;
+  cursor:grab;
+  transition:.15s;
+}
+
+.token:hover{
+  transform: translateY(-3px);
+}
+
+.token img{
+  width:34px;
+  height:34px;
+}
+
+/* =====================================================
+   DROPZONE
+===================================================== */
+.dropzone{
+  min-height:150px;
+  border-radius:22px;
+  border:3px dashed #5d66e8;
+  background:#ffffff;
+  padding:12px;
+  position:relative;
+  display:flex;
+  flex-wrap:wrap;
+  align-content:flex-start;
+  gap:10px;
+}
+
+.dropzone.dragover{
+  background: var(--c4);
+}
+
+.dropHint{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  color:#6b7280;
+  font-weight:700;
+}
+
+/* =====================================================
+   BOTONES
+===================================================== */
+.btn{
+  font-family: var(--font-title);
+  padding:10px 16px;
+  border-radius:14px;
+  border:2px solid #00000015;
+  cursor:pointer;
+  font-weight:700;
+  background:#fffef9;
+  box-shadow:0 5px 10px #0000001a;
+}
+
+.btn.primary{
+  background: linear-gradient(180deg, #86d84d, #59b52a);
+  color:white;
+  border-color:#4a9c23;
+}
+
+.btn:hover{
+  filter:brightness(1.05);
+}
+
+/* =====================================================
+   FEEDBACK
+===================================================== */
+.feedback{
+  font-family: var(--font-title);
+  margin-top:10px;
+  font-weight:700;
+}
+
+.feedback.ok{ color:var(--ok); }
+.feedback.bad{ color:var(--bad); }
+
+.topActions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.studentModal{
+  position:fixed;
+  inset:0;
+  background:#10203bcc;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  z-index:20;
+}
+
+.studentModal.open{
+  display:flex;
+}
+
+.studentCard{
+  width:min(100%, 460px);
+  background:linear-gradient(180deg, #f9fdff, #edf6ff);
+  border:3px solid #bfe4ff;
+  border-radius:22px;
+  box-shadow:0 20px 40px #0000002b;
+  padding:22px;
+}
+
+.studentCard h2{
+  margin:0 0 10px;
+  font-family:var(--font-title);
+}
+
+.studentCard p{
+  margin:0 0 14px;
+  color:var(--muted);
+}
+
+.studentCard form{
+  display:grid;
+  gap:10px;
+}
+
+.studentCard label{
+  font-weight:700;
+  color:var(--ink);
+}
+
+.studentCard input{
+  width:100%;
+  border:2px solid var(--c3);
+  border-radius:14px;
+  padding:12px 14px;
+  font-size:18px;
+  font-family:var(--font-body);
+}
+
+.recordSummary{
+  margin-bottom:14px;
+  padding:14px 16px;
+  border-radius:16px;
+  background:#eef7ff;
+  border:2px solid #cbe6ff;
+}
+
+.recordPhase{
+  margin-top:14px;
+  padding:14px 16px;
+  border-radius:16px;
+  background:#fbfdff;
+  border:2px solid #dbe9f6;
+}
+
+.recordPhase h3{
+  margin:0 0 10px;
+  font-family:var(--font-title);
+}
+
+.recordMeta{
+  margin:0 0 10px;
+  color:var(--muted);
+  font-size:14px;
+}
+
+.recordItem{
+  padding:10px 0;
+  border-top:1px solid #d9e6f2;
+}
+
+.recordItem:first-of-type{
+  border-top:0;
+  padding-top:0;
+}
+
+.recordItem strong{
+  font-family:var(--font-title);
+}
+
+.recordItem.ok strong{
+  color:var(--ok);
+}
+
+.recordItem.bad strong{
+  color:var(--bad);
+}
+
+.optionsWrap{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns: repeat(2, minmax(100px, 1fr));
+  gap:10px;
+}
+
+.optionBtn{
+  font-family: var(--font-title);
+  font-size:20px;
+  font-weight:700;
+  border:2px solid var(--c2);
+  border-radius:14px;
+  background:#fff;
+  color:#1b2a4a;
+  padding:12px 10px;
+  cursor:pointer;
+  box-shadow:0 8px 16px #00000012;
+}
+
+.optionBtn:hover{
+  background: var(--c4);
+}
+
+.optionBtn.selected{
+  background: linear-gradient(135deg, var(--c2), var(--c5));
+  color:#fff;
+  border-color: transparent;
+}
+
+.inputAnswerWrap{
+  margin-top:10px;
+}
+
+.inputAnswerWrap label{
+  display:block;
+  font-size:13px;
+  color:var(--muted);
+  font-weight:700;
+  margin-bottom:6px;
+}
+
+.inputAnswerWrap input{
+  width:100%;
+  max-width:220px;
+  border:2px solid var(--c3);
+  border-radius:12px;
+  padding:10px 12px;
+  font-size:20px;
+  font-family: var(--font-title);
+  color:#1b2a4a;
+  background:#fff;
+}
+
+.footer{
+  margin-top:0;
+}
+
+.phasebar{
+  display:flex;
+  gap:7px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.phaseBtn{
+  font-family: var(--font-title);
+  padding:8px 12px;
+  border-radius:12px;
+  border:2px solid #b7d7ea;
+  cursor:pointer;
+  font-weight:700;
+  background:#f8fdff;
+  box-shadow:0 3px 8px #00000010;
+}
+
+.phaseBtn.active{
+  border-color: #575ddb;
+  background: linear-gradient(180deg, #7a89ff, #606ddf);
+  color:#fff;
+}
+
+.phaseBtn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+  filter:grayscale(0.2);
+}
+/* ===== Operación visual grande ===== */
+.visual{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:14px;
+  row-gap:10px;
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1.2;
+  max-width:100%;
+}
+
+.visual .op-img{
+  width: 42px;
+  height: 42px;
+  vertical-align: middle;
+  flex:0 0 auto;
+}
+
+.visual .symbol{
+  font-size: 36px;
+  font-weight: 900;
+  flex:0 0 auto;
+}
+/* ===== Escala general del juego ===== */
+.app{
+  transform: scale(1);
+  transform-origin: top center;
+}
+.visual{
+  font-size: 44px;
+}
+
+.visual .op-img{
+  width: 56px;
+  height: 56px;
+}
+
+.visual .symbol{
+  font-size: 44px;
+}
+
+.math,
+.drawStatement,
+.concrete-hint{
+  overflow-wrap:anywhere;
+}
+
+@media (max-width: 900px){
+  .topActions{
+    width:100%;
+  }
+
+  .gamebar{
+    border-radius:14px;
+  }
+
+  h1{
+    font-size:32px;
+  }
+
+  .progressTrack{
+    width:140px;
+  }
+
+  .visual{
+    font-size:34px;
+    gap:10px;
+  }
+
+  .visual .symbol{
+    font-size:34px;
+  }
+
+  .visual .op-img{
+    width:44px;
+    height:44px;
+  }
+}

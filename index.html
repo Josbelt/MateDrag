@@ -1,0 +1,129 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MateDrag - Fase 1</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="bg"></div>
+
+  <main class="app">
+    <header class="topbar gamebar">
+      <h1>MateDrag</h1>
+      <div class="hud">
+        <div class="pill" id="studentBadge">
+          Estudiante: <span id="studentNameDisplay">Sin registrar</span>
+        </div>
+        <div class="progressTrack" aria-hidden="true">
+          <span class="progressFill"></span>
+        </div>
+        <div class="pill">
+          Problema <span id="qIndex">1</span>/10
+        </div>
+        <button class="btn" id="changeStudentBtn" type="button">Cambiar estudiante</button>
+        <button class="btn" id="newGameBtn" type="button">Nueva partida</button>
+      </div>
+    </header>
+    <div class="phasebar-wrap game-tabs">
+      <nav class="phasebar" aria-label="Fases">
+        <button class="phaseBtn" data-phase="concreta" type="button">🧩 Fase concreta</button>
+        <button class="phaseBtn" data-phase="grafica" type="button" disabled>✏️ Fase gráfica</button>
+        <button class="phaseBtn" data-phase="simbolica" type="button" disabled>🔢 Fase simbólica</button>
+        <button class="phaseBtn" data-phase="complementaria" type="button" disabled>🧠 Fase complementaria</button>
+      </nav>
+      <div class="topActions">
+        <button class="btn" id="showErrorsBtn" type="button">Mostrar registro</button>
+        <button class="btn" id="exportLogBtn" type="button">Descargar registro</button>
+        <button class="btn" id="copyLinkBtn" type="button">Copiar enlace</button>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="prompt">
+        <div class="visual" id="visualOp"></div>
+        <div class="math" id="mathOp"></div>
+        <div class="visual concrete" id="visualConcrete" aria-live="polite"></div>
+        <div class="concreteSub" id="concreteSub"></div>
+        <div class="graphicWorkspace" id="graphicWorkspace" style="display:none;">
+          <div class="drawTools" id="drawTools">
+            <span class="drawToolsLabel">Figura:</span>
+            <button class="shapeBtn active" type="button" data-shape="square">Cuadro</button>
+            <button class="shapeBtn" type="button" data-shape="star">Estrella</button>
+            <button class="shapeBtn" type="button" data-shape="circle">Círculo</button>
+          </div>
+
+          <div class="drawTask">
+            <p class="drawStatement" id="drawStatementA"></p>
+            <div class="drawZone" id="drawZoneA" aria-label="Zona de dibujo A"></div>
+            <div class="drawCount">Dibujados: <strong id="drawCountA">0</strong></div>
+          </div>
+
+          <div class="drawTask">
+            <p class="drawStatement" id="drawStatementB"></p>
+            <div class="drawZone" id="drawZoneB" aria-label="Zona de dibujo B"></div>
+            <div class="drawCount">Dibujados: <strong id="drawCountB">0</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="panel" id="tokensPanel">
+          <h2>Arrastra fichas</h2>
+          <p class="hint">Arrastra las fichas al cuadro de respuesta.</p>
+
+          <div class="tokens" id="tokenPool" aria-label="Fichas disponibles"></div>
+        </div>
+
+        <div class="panel answer" id="answerPanel">
+          <h2>Tu respuesta</h2>
+          <div class="dropzone" id="dropzone">
+            <span class="dropHint">Suelta aquí</span>
+          </div>
+
+          <div class="answerBar">
+            <div><span id="answerLabel">Respuesta:</span> <strong id="answerCount">0</strong></div>
+            <button class="btn" id="clearBtn" type="button">Borrar</button>
+            <button class="btn primary" id="checkBtn" type="button">Comprobar</button>
+          </div>
+
+          <div class="inputAnswerWrap" id="inputAnswerWrap" style="display:none;">
+            <label for="numericAnswer">Escribe tu respuesta en números:</label>
+            <input id="numericAnswer" type="number" min="0" step="1" inputmode="numeric" />
+          </div>
+
+          <div class="optionsWrap" id="optionsWrap" style="display:none;"></div>
+
+          <div class="feedback" id="feedback"></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer"></footer>
+
+    <section class="card" id="errorsPanel" style="display:none; margin-top:14px;">
+      <h2>Registro del estudiante</h2>
+      <div id="errorsList"></div>
+    </section>
+
+    <section class="studentModal" id="studentModal" aria-modal="true" role="dialog">
+      <div class="studentCard">
+        <h2>Registrar estudiante</h2>
+        <p>Escribe el nombre del estudiante para guardar sus respuestas en este navegador.</p>
+        <form id="studentForm">
+          <label for="studentNameInput">Nombre del estudiante</label>
+          <input id="studentNameInput" type="text" maxlength="80" autocomplete="name" required />
+          <button class="btn primary" type="submit">Entrar</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/game.js"></script>
+</body>
+</html>
