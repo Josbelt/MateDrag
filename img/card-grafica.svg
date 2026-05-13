@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Tarjeta Gráfica</title>
+  <desc id="desc">Tarjeta naranja de la fase gráfica con gráfico de barras y botón jugar.</desc>
+  <defs>
+    <linearGradient id="card" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ff7b00"/>
+      <stop offset="1" stop-color="#ff5b00"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffb21d"/>
+      <stop offset="1" stop-color="#ff9700"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#1fc7ff"/>
+      <stop offset="1" stop-color="#0877c4"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffb83a"/>
+      <stop offset="1" stop-color="#ff7a00"/>
+    </linearGradient>
+    <linearGradient id="purple" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#a66be9"/>
+      <stop offset="1" stop-color="#6c35b7"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#6b2600" flood-opacity=".35"/>
+    </filter>
+  </defs>
+
+  <rect x="22" y="22" width="724" height="980" rx="72" fill="url(#edge)"/>
+  <rect x="50" y="50" width="668" height="924" rx="54" fill="url(#card)" filter="url(#shadow)"/>
+  <text x="384" y="176" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="104" font-weight="900" fill="#fff" stroke="#fff" stroke-width="2">GRÁFICA</text>
+
+  <rect x="122" y="246" width="524" height="526" rx="24" fill="#fff"/>
+  <g stroke="#cfe5f8" stroke-width="4">
+    <path d="M156 288H612M156 362H612M156 436H612M156 510H612M156 584H612M156 658H612M156 732H612"/>
+    <path d="M156 288V732M222 288V732M288 288V732M354 288V732M420 288V732M486 288V732M552 288V732M612 288V732"/>
+  </g>
+  <rect x="238" y="512" width="86" height="220" rx="8" fill="url(#blue)"/>
+  <rect x="372" y="432" width="88" height="300" rx="8" fill="url(#orange)"/>
+  <rect x="510" y="344" width="90" height="388" rx="8" fill="url(#purple)"/>
+  <path d="M156 732H612" stroke="#063d88" stroke-width="9" stroke-linecap="round"/>
+
+  <rect x="124" y="806" width="520" height="150" rx="40" fill="none" stroke="#ffb21d" stroke-width="18"/>
+  <text x="384" y="908" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="84" font-weight="900" fill="#fff">JUGAR</text>
+</svg>

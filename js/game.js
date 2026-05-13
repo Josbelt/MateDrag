@@ -5,6 +5,8 @@ const CONCRETE_MAX_TOTAL = 12;
 const FEEDBACK_DELAY_MS = 3000;
 const DIVIDER_IMG = "img/dividir.png";
 const PHASES = ["concreta", "grafica", "simbolica", "complementaria"];
+const TEACHER_PASSWORD = "300901";
+const POINTS_PER_CORRECT_ANSWER = 100;
 
 const TOKENS = [
   { key: "ball", img: "img/ball.png", label: "balón" },
@@ -58,6 +60,7 @@ let drawState = {
 
 // ======= DOM =======
 const qIndexEl = document.getElementById("qIndex");
+const progressFillEl = document.querySelector(".progressFill");
 const visualOpEl = document.getElementById("visualOp");
 const mathOpEl = document.getElementById("mathOp");
 const visualConcreteEl = document.getElementById("visualConcrete");
@@ -100,6 +103,8 @@ const studentFormEl = document.getElementById("studentForm");
 const studentNameInputEl = document.getElementById("studentNameInput");
 const studentNameDisplayEl = document.getElementById("studentNameDisplay");
 const menuStudentNameDisplayEl = document.getElementById("menuStudentNameDisplay");
+const menuStarCountDisplayEl = document.getElementById("menuStarCountDisplay");
+const starCountDisplayEl = document.getElementById("starCountDisplay");
 const changeStudentBtnEl = document.getElementById("changeStudentBtn");
 const menuScreenEl = document.getElementById("menuScreen");
 const gameScreenEl = document.getElementById("gameScreen");
@@ -109,6 +114,18 @@ const menuPhaseCards = Array.from(document.querySelectorAll("[data-phase-card]")
 const menuNavBtns = Array.from(document.querySelectorAll(".menuNavBtn"));
 const adventureSteps = Array.from(document.querySelectorAll(".adventureTrack .step"));
 const soundButtonEl = document.querySelector(".soundButton");
+const openTeacherMenuBtnEl = document.getElementById("openTeacherMenuBtn");
+const openTeacherStudentBtnEl = document.getElementById("openTeacherStudentBtn");
+const teacherModalEl = document.getElementById("teacherModal");
+const teacherLoginFormEl = document.getElementById("teacherLoginForm");
+const teacherPasswordInputEl = document.getElementById("teacherPasswordInput");
+const teacherLoginErrorEl = document.getElementById("teacherLoginError");
+const closeTeacherLoginBtnEl = document.getElementById("closeTeacherLoginBtn");
+const teacherDashboardEl = document.getElementById("teacherDashboard");
+const teacherRecordsEl = document.getElementById("teacherRecords");
+const teacherSummaryEl = document.getElementById("teacherSummary");
+const closeTeacherDashboardBtnEl = document.getElementById("closeTeacherDashboardBtn");
+const exportAllRecordsBtnEl = document.getElementById("exportAllRecordsBtn");
 
 const STORAGE_KEYS = {
   currentStudent: "matedrag.currentStudent",
@@ -131,13 +148,20 @@ numericAnswerEl.addEventListener("input", () => {
   answerCountEl.textContent = String(game.answer);
 });
 
-showErrorsBtn.addEventListener("click", () => {
-  renderSessionLog();
-  errorsPanel.style.display = "block";
-});
+if (showErrorsBtn) {
+  showErrorsBtn.addEventListener("click", () => {
+    renderSessionLog();
+    errorsPanel.style.display = "block";
+  });
+}
 
-exportLogBtn.addEventListener("click", exportSessionLog);
-copyLinkBtn.addEventListener("click", copyShareLink);
+if (exportLogBtn) {
+  exportLogBtn.addEventListener("click", exportSessionLog);
+}
+
+if (copyLinkBtn) {
+  copyLinkBtn.addEventListener("click", copyShareLink);
+}
 studentFormEl.addEventListener("submit", handleStudentSubmit);
 
 playPhaseBtns.forEach((btn) => {
@@ -154,6 +178,29 @@ if (soundButtonEl) {
     soundButtonEl.textContent = soundEnabled ? "🔊" : "🔇";
     soundButtonEl.setAttribute("aria-label", soundEnabled ? "Sonido activado" : "Sonido desactivado");
   });
+}
+
+[openTeacherMenuBtnEl, openTeacherStudentBtnEl].filter(Boolean).forEach((btn) => {
+  btn.addEventListener("click", () => {
+    closeStudentModal();
+    openTeacherLogin();
+  });
+});
+
+if (teacherLoginFormEl) {
+  teacherLoginFormEl.addEventListener("submit", handleTeacherLogin);
+}
+
+if (closeTeacherLoginBtnEl) {
+  closeTeacherLoginBtnEl.addEventListener("click", closeTeacherLogin);
+}
+
+if (closeTeacherDashboardBtnEl) {
+  closeTeacherDashboardBtnEl.addEventListener("click", closeTeacherDashboard);
+}
+
+if (exportAllRecordsBtnEl) {
+  exportAllRecordsBtnEl.addEventListener("click", exportAllRecords);
 }
 
 dropzoneEl.addEventListener("dragover", (e) => {
@@ -353,6 +400,9 @@ function createSessionLog(name) {
     studentName: name,
     startedAt: now,
     updatedAt: now,
+    currentPhase: "concreta",
+    unlockedIndex: 0,
+    starCount: 0,
     phases: createEmptyPhaseBuckets(),
   };
 }
@@ -366,8 +416,61 @@ function loadStoredJson(key) {
   }
 }
 
+function normalizeSessionLog(session) {
+  const now = new Date().toISOString();
+  const safeSession = session && typeof session === "object" ? session : {};
+  const phases = createEmptyPhaseBuckets();
+
+  PHASES.forEach((phaseKey) => {
+    const entries = safeSession.phases && Array.isArray(safeSession.phases[phaseKey])
+      ? safeSession.phases[phaseKey]
+      : [];
+    phases[phaseKey] = entries.map((entry) => ({
+      ...entry,
+      starsEarned: Number.isFinite(Number(entry.starsEarned))
+        ? Number(entry.starsEarned)
+        : (entry.isCorrect ? POINTS_PER_CORRECT_ANSWER : 0),
+    }));
+  });
+  const savedStars = Number(safeSession.starCount);
+  const derivedStars = PHASES
+    .flatMap((phaseKey) => phases[phaseKey])
+    .filter((entry) => entry.isCorrect)
+    .length * POINTS_PER_CORRECT_ANSWER;
+
+  return {
+    id: safeSession.id || `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    studentName: safeSession.studentName || "Estudiante sin nombre",
+    startedAt: safeSession.startedAt || now,
+    updatedAt: safeSession.updatedAt || safeSession.startedAt || now,
+    currentPhase: PHASES.includes(safeSession.currentPhase) ? safeSession.currentPhase : "concreta",
+    unlockedIndex: getUnlockedIndexFromSession({ ...safeSession, phases }),
+    starCount: Number.isFinite(savedStars) ? Math.max(0, savedStars) : derivedStars,
+    phases,
+  };
+}
+
+function getUnlockedIndexFromSession(session) {
+  const savedIndex = Number.isFinite(session.unlockedIndex)
+    ? Math.max(0, Math.min(PHASES.length - 1, session.unlockedIndex))
+    : 0;
+  const derivedIndex = PHASES.reduce((maxIndex, phaseKey, index) => {
+    const entries = session.phases && Array.isArray(session.phases[phaseKey]) ? session.phases[phaseKey] : [];
+    if (entries.length >= TOTAL_QUESTIONS && index < PHASES.length - 1) {
+      return Math.max(maxIndex, index + 1);
+    }
+    return maxIndex;
+  }, 0);
+
+  return Math.max(savedIndex, derivedIndex);
+}
+
 function loadStoredSessions() {
-  return loadStoredJson(STORAGE_KEYS.sessions) || {};
+  const sessions = loadStoredJson(STORAGE_KEYS.sessions) || {};
+  Object.keys(sessions).forEach((sessionId) => {
+    sessions[sessionId] = normalizeSessionLog(sessions[sessionId]);
+  });
+  return sessions;
 }
 
 function saveStoredSessions(sessions) {
@@ -377,6 +480,8 @@ function saveStoredSessions(sessions) {
 function saveSessionLog() {
   if (!sessionLog) return;
   sessionLog.updatedAt = new Date().toISOString();
+  sessionLog.currentPhase = phase;
+  sessionLog.unlockedIndex = unlockedIndex;
   localStorage.setItem(STORAGE_KEYS.currentSession, sessionLog.id);
   const sessions = loadStoredSessions();
   sessions[sessionLog.id] = sessionLog;
@@ -390,7 +495,9 @@ function getSessionById(sessionId) {
 
 function getSessionByStudent(student) {
   const sessions = Object.values(loadStoredSessions());
-  return sessions.find((session) => session.studentName === student) || null;
+  return sessions
+    .filter((session) => session.studentName.toLowerCase() === student.toLowerCase())
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0] || null;
 }
 
 function setMainNavActive(target) {
@@ -447,6 +554,24 @@ function setStudentNameUI() {
   if (menuStudentNameDisplayEl) {
     menuStudentNameDisplayEl.textContent = studentName || "Sin registrar";
   }
+  updateStarCountUI();
+}
+
+function updateStarCountUI() {
+  const score = sessionLog ? Number(sessionLog.starCount) || 0 : 0;
+  if (menuStarCountDisplayEl) {
+    menuStarCountDisplayEl.textContent = String(score);
+  }
+  if (starCountDisplayEl) {
+    starCountDisplayEl.textContent = String(score);
+  }
+}
+
+function updateProgressBar(currentStep = game.current + 1) {
+  if (!progressFillEl) return;
+  const safeStep = Math.max(0, Math.min(TOTAL_QUESTIONS, currentStep));
+  const percent = (safeStep / TOTAL_QUESTIONS) * 100;
+  progressFillEl.style.width = `${percent}%`;
 }
 
 function escapeHtml(value) {
@@ -508,10 +633,20 @@ function addAttemptRecord(entry) {
   if (!sessionLog.phases[entry.phase]) {
     sessionLog.phases[entry.phase] = [];
   }
+  if (entry.isCorrect) {
+    sessionLog.starCount = (Number(sessionLog.starCount) || 0) + POINTS_PER_CORRECT_ANSWER;
+    entry.starsEarned = POINTS_PER_CORRECT_ANSWER;
+  } else {
+    entry.starsEarned = 0;
+  }
   sessionLog.phases[entry.phase].push(entry);
+  updateStarCountUI();
   saveSessionLog();
   if (errorsPanel.style.display === "block") {
     renderSessionLog();
+  }
+  if (teacherDashboardEl && !teacherDashboardEl.hidden) {
+    renderTeacherDashboard();
   }
 }
 
@@ -527,6 +662,7 @@ function renderSessionLog() {
   const summaryHtml = `
     <div class="recordSummary">
       <strong>Estudiante:</strong> ${escapeHtml(sessionLog.studentName)}<br>
+      <strong>Estrellas:</strong> ${escapeHtml(sessionLog.starCount || 0)}<br>
       <strong>Respuestas guardadas:</strong> ${totalAnswers}<br>
       <strong>Correctas:</strong> ${totalCorrect}<br>
       <strong>Incorrectas:</strong> ${totalAnswers - totalCorrect}
@@ -551,6 +687,7 @@ function renderSessionLog() {
         <span><strong>Problema:</strong> ${escapeHtml(entry.problem)}</span><br>
         <span><strong>Respuesta del estudiante:</strong> ${escapeHtml(entry.studentAnswer)}</span><br>
         <span><strong>Respuesta correcta:</strong> ${escapeHtml(entry.correctAnswer)}</span><br>
+        <span><strong>Estrellas ganadas:</strong> ${escapeHtml(entry.starsEarned || 0)}</span><br>
         <span><strong>Retroalimentación:</strong> ${escapeHtml(entry.feedback)}</span>
       </div>
     `).join("");
@@ -590,6 +727,169 @@ function copyShareLink() {
   }
 }
 
+function formatDateTime(value) {
+  if (!value) return "Sin fecha";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin fecha";
+  return date.toLocaleString("es-EC", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+function getSessionEntries(session) {
+  return PHASES.flatMap((phaseKey) => session.phases[phaseKey] || []);
+}
+
+function openTeacherLogin() {
+  if (!teacherModalEl) return;
+  teacherModalEl.classList.add("open");
+  if (teacherPasswordInputEl) {
+    teacherPasswordInputEl.value = "";
+    setTimeout(() => teacherPasswordInputEl.focus(), 0);
+  }
+  if (teacherLoginErrorEl) {
+    teacherLoginErrorEl.textContent = "";
+  }
+}
+
+function closeTeacherLogin() {
+  if (!teacherModalEl) return;
+  teacherModalEl.classList.remove("open");
+}
+
+function handleTeacherLogin(event) {
+  event.preventDefault();
+  const password = teacherPasswordInputEl ? teacherPasswordInputEl.value.trim() : "";
+  if (password !== TEACHER_PASSWORD) {
+    if (teacherLoginErrorEl) {
+      teacherLoginErrorEl.textContent = "Clave incorrecta. Intenta nuevamente.";
+    }
+    if (teacherPasswordInputEl) {
+      teacherPasswordInputEl.select();
+    }
+    return;
+  }
+
+  closeTeacherLogin();
+  openTeacherDashboard();
+}
+
+function openTeacherDashboard() {
+  if (!teacherDashboardEl) return;
+  renderTeacherDashboard();
+  teacherDashboardEl.hidden = false;
+}
+
+function closeTeacherDashboard() {
+  if (!teacherDashboardEl) return;
+  teacherDashboardEl.hidden = true;
+}
+
+function renderTeacherDashboard() {
+  if (!teacherRecordsEl || !teacherSummaryEl) return;
+  const sessions = Object.values(loadStoredSessions())
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+  if (sessions.length === 0) {
+    teacherSummaryEl.textContent = "Todavía no hay registros guardados.";
+    teacherRecordsEl.innerHTML = "<p class=\"emptyTeacherState\">Cuando los estudiantes respondan, sus datos aparecerán aquí.</p>";
+    return;
+  }
+
+  const allEntries = sessions.flatMap(getSessionEntries);
+  const totalCorrect = allEntries.filter((entry) => entry.isCorrect).length;
+  const studentCount = new Set(sessions.map((session) => session.studentName.toLowerCase())).size;
+  const totalStars = sessions.reduce((sum, session) => sum + (Number(session.starCount) || 0), 0);
+  teacherSummaryEl.textContent = `${studentCount} estudiante(s), ${sessions.length} sesión(es), ${allEntries.length} respuesta(s), ${totalCorrect} correcta(s), ${allEntries.length - totalCorrect} incorrecta(s), ${totalStars} estrella(s).`;
+
+  teacherRecordsEl.innerHTML = sessions.map(renderTeacherSession).join("");
+}
+
+function renderTeacherSession(session) {
+  const entries = getSessionEntries(session);
+  const correctCount = entries.filter((entry) => entry.isCorrect).length;
+  const phaseBlocks = PHASES.map((phaseKey) => renderTeacherPhase(session, phaseKey)).join("");
+
+  return `
+    <article class="teacherSession">
+      <header class="teacherSessionHeader">
+        <div>
+          <h3>${escapeHtml(session.studentName)}</h3>
+          <p>Inicio: ${formatDateTime(session.startedAt)} · Última actividad: ${formatDateTime(session.updatedAt)}</p>
+        </div>
+        <div class="teacherSessionStats">
+          <span>${entries.length} respuestas</span>
+          <span>${correctCount} correctas</span>
+          <span>${entries.length - correctCount} incorrectas</span>
+          <span>${Number(session.starCount) || 0} estrellas</span>
+        </div>
+      </header>
+      <div class="teacherPhaseGrid">${phaseBlocks}</div>
+    </article>
+  `;
+}
+
+function renderTeacherPhase(session, phaseKey) {
+  const entries = session.phases[phaseKey] || [];
+  const correctCount = entries.filter((entry) => entry.isCorrect).length;
+  const rows = entries.map((entry, index) => `
+    <tr>
+      <td>${index + 1}</td>
+      <td>${formatDateTime(entry.answeredAt)}</td>
+      <td>${escapeHtml(operationLabel(entry.operation))}</td>
+      <td>${escapeHtml(entry.problem)}</td>
+      <td>${escapeHtml(entry.studentAnswer)}</td>
+      <td>${escapeHtml(entry.correctAnswer)}</td>
+      <td>${escapeHtml(entry.starsEarned || 0)}</td>
+      <td><span class="answerStatus ${entry.isCorrect ? "ok" : "bad"}">${entry.isCorrect ? "Correcta" : "Incorrecta"}</span></td>
+    </tr>
+  `).join("");
+
+  return `
+    <details class="teacherPhase" ${entries.length ? "open" : ""}>
+      <summary>
+        <strong>${phaseLabel(phaseKey)}</strong>
+        <span>${entries.length} respuestas · ${correctCount} correctas · ${entries.length - correctCount} incorrectas</span>
+      </summary>
+      ${entries.length ? `
+        <div class="teacherTableWrap">
+          <table class="teacherTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Fecha</th>
+                <th>Operación</th>
+                <th>Problema</th>
+                <th>Respuesta</th>
+                <th>Correcta</th>
+                <th>Estrellas</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      ` : "<p class=\"emptyTeacherState\">Aún no hay respuestas en esta fase.</p>"}
+    </details>
+  `;
+}
+
+function exportAllRecords() {
+  const sessions = loadStoredSessions();
+  const data = {
+    exportedAt: new Date().toISOString(),
+    sessions: Object.values(sessions),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "registros-ruta-numerica.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function openStudentModal(forceNewSession = false) {
   studentModalEl.classList.add("open");
   if (forceNewSession) {
@@ -621,11 +921,34 @@ function beginStudentSession(name) {
   showMainMenu("inicio");
 }
 
+function activateStoredSession(storedSession) {
+  sessionLog = normalizeSessionLog(storedSession);
+  studentName = sessionLog.studentName;
+  phase = sessionLog.currentPhase;
+  unlockedIndex = getUnlockedIndexFromSession(sessionLog);
+  localStorage.setItem(STORAGE_KEYS.currentStudent, studentName);
+  localStorage.setItem(STORAGE_KEYS.currentSession, sessionLog.id);
+  saveSessionLog();
+  setStudentNameUI();
+  return true;
+}
+
 function handleStudentSubmit(event) {
   event.preventDefault();
   const name = studentNameInputEl.value.trim();
   if (!name) {
     studentNameInputEl.focus();
+    return;
+  }
+  const existingSession = getSessionByStudent(name);
+  if (existingSession) {
+    activateStoredSession(existingSession);
+    closeStudentModal();
+    errorsPanel.style.display = "none";
+    resetPhaseUI();
+    updatePhaseButtons();
+    newGame();
+    showMainMenu("inicio");
     return;
   }
   beginStudentSession(name);
@@ -639,12 +962,7 @@ function hydrateStudentSession() {
   if (sessionParam) {
     const storedSession = getSessionById(sessionParam);
     if (storedSession) {
-      sessionLog = storedSession;
-      studentName = storedSession.studentName;
-      localStorage.setItem(STORAGE_KEYS.currentStudent, studentName);
-      localStorage.setItem(STORAGE_KEYS.currentSession, sessionLog.id);
-      setStudentNameUI();
-      return true;
+      return activateStoredSession(storedSession);
     }
   }
 
@@ -655,20 +973,12 @@ function hydrateStudentSession() {
   if (studentParam) {
     const studentSession = getSessionByStudent(studentParam);
     if (studentSession) {
-      sessionLog = studentSession;
-      studentName = studentSession.studentName;
-      localStorage.setItem(STORAGE_KEYS.currentStudent, studentName);
-      localStorage.setItem(STORAGE_KEYS.currentSession, sessionLog.id);
-      setStudentNameUI();
-      return true;
+      return activateStoredSession(studentSession);
     }
   }
 
   if (storedStudent && storedSession && storedSession.studentName === storedStudent) {
-    studentName = storedStudent;
-    sessionLog = storedSession;
-    setStudentNameUI();
-    return true;
+    return activateStoredSession(storedSession);
   }
 
   setStudentNameUI();
@@ -692,6 +1002,7 @@ function newGame() {
   }
 
   game.current = 0;
+  updateProgressBar(0);
   loadQuestion();
 }
 
@@ -957,6 +1268,7 @@ function loadQuestion() {
   updateAnswerInputVisibility();
 
   qIndexEl.textContent = String(game.current + 1);
+  updateProgressBar(game.current + 1);
 
   if (phase === "concreta") {
     loadQuestionConcrete(q);
@@ -1527,6 +1839,7 @@ function checkAnswer() {
 
 function finishGame() {
   stopGraphicDraw();
+  updateProgressBar(TOTAL_QUESTIONS);
   graphicWorkspaceEl.style.display = "none";
   inputAnswerWrapEl.style.display = "none";
   if (phase === "concreta") {
@@ -1621,6 +1934,7 @@ function setPhase(nextPhase) {
   phase = nextPhase;
   resetPhaseUI();
   updatePhaseButtons();
+  saveSessionLog();
   newGame();
 }
 
@@ -1629,6 +1943,7 @@ function unlockNextPhase() {
   if (idx >= unlockedIndex && idx < PHASES.length - 1) {
     unlockedIndex = idx + 1;
     updatePhaseButtons();
+    saveSessionLog();
   }
 }
 
@@ -1649,10 +1964,14 @@ function updatePhaseButtons() {
   });
 
   playPhaseBtns.forEach((btn) => {
-    const idx = PHASES.indexOf(btn.dataset.phase);
+    const phaseKey = btn.dataset.phase;
+    const idx = PHASES.indexOf(phaseKey);
     const isLocked = idx > unlockedIndex;
     btn.disabled = isLocked;
-    btn.textContent = isLocked ? "Bloqueado" : "Jugar";
+    btn.setAttribute("aria-label", isLocked ? `${phaseLabel(phaseKey)} bloqueada` : `Jugar ${phaseLabel(phaseKey)}`);
+    if (!btn.classList.contains("phaseImageButton")) {
+      btn.textContent = isLocked ? "Bloqueado" : "Jugar";
+    }
   });
 
   adventureSteps.forEach((step, index) => {

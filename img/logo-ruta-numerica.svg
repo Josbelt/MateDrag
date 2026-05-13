@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 230" role="img" aria-labelledby="title desc">
+  <title id="title">Ruta Numérica</title>
+  <desc id="desc">Logo de Ruta Numérica con colores azul, verde y naranja.</desc>
+  <defs>
+    <linearGradient id="blueText" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#17a8ff"/>
+      <stop offset="1" stop-color="#0747a8"/>
+    </linearGradient>
+    <linearGradient id="greenText" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#61d42d"/>
+      <stop offset="1" stop-color="#238e16"/>
+    </linearGradient>
+    <linearGradient id="orangeText" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ff9f20"/>
+      <stop offset="1" stop-color="#ff5b00"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="3" flood-color="#062a76" flood-opacity=".45"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <text x="72" y="90" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="86" font-weight="900" stroke="#ffffff" stroke-width="9" paint-order="stroke" letter-spacing="0">
+      <tspan fill="url(#blueText)">Ru</tspan><tspan fill="url(#greenText)">t</tspan><tspan fill="url(#orangeText)">a</tspan>
+    </text>
+    <text x="68" y="174" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="86" font-weight="900" fill="#0747a8" stroke="#ffffff" stroke-width="9" paint-order="stroke" letter-spacing="0">Numérica</text>
+  </g>
+
+  <path d="M122 193c118 26 337 27 471-1" fill="none" stroke="#0874d9" stroke-width="24" stroke-linecap="round"/>
+  <text x="360" y="202" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="25" font-weight="900" fill="#ffffff">¡Cada fase te lleva más lejos!</text>
+
+  <g transform="translate(596 154)">
+    <path d="M42 71c-19-27-30-45-30-62a30 30 0 0 1 60 0c0 17-11 35-30 62z" fill="#0874d9"/>
+    <circle cx="42" cy="11" r="12" fill="#ffffff"/>
+    <ellipse cx="42" cy="78" rx="27" ry="8" fill="#42b61e"/>
+  </g>
+
+  <g transform="translate(18 28) rotate(-12)">
+    <circle cx="45" cy="45" r="42" fill="#ffe47c"/>
+    <circle cx="45" cy="45" r="42" fill="#f7aa1b" opacity=".28"/>
+    <path d="M35 58l-9 18 18-9 32-32c5-5 6-13 1-18s-13-4-18 1L35 58z" fill="#ff6a33"/>
+    <path d="M58 18c12 3 20 11 23 23l-22 22-23-23 22-22z" fill="#f7faff"/>
+    <path d="M36 40l-14 3 11 11z" fill="#1c80e9"/>
+    <path d="M59 63l-3 14-11-11z" fill="#1c80e9"/>
+    <circle cx="63" cy="35" r="7" fill="#3b66d8"/>
+    <path d="M29 67c-7 3-12 8-15 16 8-3 13-8 16-15z" fill="#ff3f75"/>
+  </g>
+</svg>

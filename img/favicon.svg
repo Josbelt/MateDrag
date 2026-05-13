@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="blue" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#159fff"/>
+      <stop offset="1" stop-color="#0646a9"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#62d42c"/>
+      <stop offset="1" stop-color="#238f18"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ff9820"/>
+      <stop offset="1" stop-color="#ff5d00"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#f8fcff"/>
+  <path d="M18 91c19 12 73 14 94-2" fill="none" stroke="url(#blue)" stroke-width="13" stroke-linecap="round"/>
+  <rect x="16" y="22" width="25" height="31" rx="7" fill="url(#green)" transform="rotate(-8 28.5 37.5)"/>
+  <rect x="51" y="16" width="26" height="35" rx="7" fill="url(#orange)" transform="rotate(2 64 33.5)"/>
+  <rect x="87" y="22" width="25" height="31" rx="7" fill="url(#blue)" transform="rotate(8 99.5 37.5)"/>
+  <text x="64" y="78" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="42" font-weight="900" fill="#0646a9">RN</text>
+  <circle cx="101" cy="103" r="12" fill="url(#blue)"/>
+  <path d="M101 121c-9-14-16-22-16-31a16 16 0 1 1 32 0c0 9-7 17-16 31z" fill="url(#blue)"/>
+</svg>

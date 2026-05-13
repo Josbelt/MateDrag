@@ -7,7 +7,8 @@
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Matemisión - MateDrag</title>
+  <title>Ruta Numérica</title>
+  <link rel="icon" type="image/svg+xml" href="img/favicon.svg" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -16,31 +17,24 @@
   <main class="app">
     <section class="mainMenu" id="menuScreen" aria-label="Menú principal">
       <header class="menuTopbar">
-        <div class="brandBadge" aria-label="Matemisión">
-          <span class="brandRocket">🚀</span>
-          <div>
-            <strong>Matemisión</strong>
-            <span>¡De lo concreta a lo increíble!</span>
-          </div>
+        <div class="brandBadge" aria-label="Ruta Numérica">
+          <img class="brandLogo" src="img/logo-ruta-numerica.svg" alt="Ruta Numérica" />
         </div>
 
-        <nav class="menuNav" aria-label="Navegación principal">
-          <button class="menuNavBtn active" data-menu="inicio" type="button">Inicio</button>
-          <button class="menuNavBtn" data-menu="juegos" type="button">Juegos</button>
-          <button class="menuNavBtn" data-menu="progreso" type="button">Progreso</button>
-          <button class="menuNavBtn" data-menu="recompensas" type="button">Recompensas</button>
-          <button class="menuNavBtn" data-menu="ayuda" type="button">Ayuda</button>
-        </nav>
-
-        <div class="playerPanel">
-          <div class="avatarFace" aria-hidden="true">
-            <span></span>
+        <div class="menuAccountArea">
+          <div class="playerPanel">
+            <div class="avatarFace" aria-hidden="true">
+              <span></span>
+            </div>
+            <div>
+              <strong>¡Hola, Explorador!</strong>
+              <span id="menuStudentNameDisplay">Sin registrar</span>
+              <b class="starCounter"><span aria-hidden="true">⭐</span> <span id="menuStarCountDisplay">0</span></b>
+            </div>
           </div>
-          <div>
-            <strong>¡Hola, Explorador!</strong>
-            <span id="menuStudentNameDisplay">Sin registrar</span>
-            <b>⭐ 1250</b>
-          </div>
+          <button class="teacherAccessBtn" id="openTeacherMenuBtn" type="button" aria-label="Panel del profesor" title="Profesor">
+            <img src="img/profesor-icon.svg" alt="" aria-hidden="true" />
+          </button>
         </div>
       </header>
 
@@ -80,44 +74,32 @@
         <div class="woodSign">¡Cada fase te lleva más lejos!</div>
       </div>
 
-      <section class="menuHero" aria-label="Matemisión">
+      <section class="menuHero" aria-label="Ruta Numérica">
         <h1 class="menuTitle">
-          <span>Mate</span><span>misión</span>
+          <span>Ruta</span><span>Numérica</span>
         </h1>
-        <p class="menuRibbon">¡De lo concreta a lo increíble!</p>
-        <p class="menuTagline">Aprende jugando las fases de las matemáticas</p>
+        <p class="menuRibbon">¡Cada fase te lleva más lejos!</p>
+        <p class="menuTagline">Juega · Explora · Aprende</p>
 
         <div class="phaseCards" aria-label="Fases disponibles">
-          <article class="phaseCard concreteCard" data-phase-card="concreta">
-            <h2>Concreta</h2>
-            <div class="phaseArt cubesArt">
-              <img src="img/box.png" alt="" />
-              <img src="img/ball.png" alt="" />
-              <img src="img/key.png" alt="" />
-            </div>
-            <button class="playPhaseBtn" data-phase="concreta" type="button">Jugar</button>
+          <article class="phaseCard phaseImageCard concreteCard" data-phase-card="concreta">
+            <img class="phaseCardImage" src="img/card-concreta.svg" alt="Concreta" />
+            <button class="playPhaseBtn phaseImageButton" data-phase="concreta" type="button" aria-label="Jugar fase concreta"></button>
           </article>
 
-          <article class="phaseCard graphCard" data-phase-card="grafica">
-            <h2>Gráfica</h2>
-            <div class="phaseArt chartArt">
-              <span></span><span></span><span></span>
-            </div>
-            <button class="playPhaseBtn" data-phase="grafica" type="button">Jugar</button>
+          <article class="phaseCard phaseImageCard graphCard" data-phase-card="grafica">
+            <img class="phaseCardImage" src="img/card-grafica.svg" alt="Gráfica" />
+            <button class="playPhaseBtn phaseImageButton" data-phase="grafica" type="button" aria-label="Jugar fase gráfica"></button>
           </article>
 
-          <article class="phaseCard symbolCard" data-phase-card="simbolica">
-            <h2>Simbólica</h2>
-            <div class="phaseArt equationArt">2×3=6</div>
-            <button class="playPhaseBtn" data-phase="simbolica" type="button">Jugar</button>
+          <article class="phaseCard phaseImageCard symbolCard" data-phase-card="simbolica">
+            <img class="phaseCardImage" src="img/card-simbolica.svg" alt="Simbólica" />
+            <button class="playPhaseBtn phaseImageButton" data-phase="simbolica" type="button" aria-label="Jugar fase simbólica"></button>
           </article>
 
-          <article class="phaseCard appCard" data-phase-card="complementaria">
-            <h2>Aplicación</h2>
-            <div class="phaseArt clipboardArt">
-              <span></span><span></span><span></span>
-            </div>
-            <button class="playPhaseBtn" data-phase="complementaria" type="button">Jugar</button>
+          <article class="phaseCard phaseImageCard appCard" data-phase-card="complementaria">
+            <img class="phaseCardImage" src="img/card-aplicacion.svg" alt="Aplicación" />
+            <button class="playPhaseBtn phaseImageButton" data-phase="complementaria" type="button" aria-label="Jugar fase aplicación"></button>
           </article>
         </div>
 
@@ -137,10 +119,13 @@
 
     <section class="gameScreen" id="gameScreen" hidden>
       <header class="topbar gamebar">
-        <h1>MateDrag</h1>
+        <h1>Ruta Numérica</h1>
         <div class="hud">
           <div class="pill" id="studentBadge">
             Estudiante: <span id="studentNameDisplay">Sin registrar</span>
+          </div>
+          <div class="pill starPill">
+            ⭐ <span id="starCountDisplay">0</span>
           </div>
           <div class="progressTrack" aria-hidden="true">
             <span class="progressFill"></span>
@@ -160,11 +145,6 @@
           <button class="phaseBtn" data-phase="simbolica" type="button" disabled>🔢 Fase simbólica</button>
           <button class="phaseBtn" data-phase="complementaria" type="button" disabled>🧠 Fase complementaria</button>
         </nav>
-        <div class="topActions">
-          <button class="btn" id="showErrorsBtn" type="button">Mostrar registro</button>
-          <button class="btn" id="exportLogBtn" type="button">Descargar registro</button>
-          <button class="btn" id="copyLinkBtn" type="button">Copiar enlace</button>
-        </div>
       </div>
 
       <section class="card">
@@ -242,8 +222,46 @@
         <form id="studentForm">
           <label for="studentNameInput">Nombre del estudiante</label>
           <input id="studentNameInput" type="text" maxlength="80" autocomplete="name" required />
-          <button class="btn primary" type="submit">Entrar</button>
+          <div class="modalActions">
+            <button class="btn" id="openTeacherStudentBtn" type="button">Profesor</button>
+            <button class="btn primary" type="submit">Entrar</button>
+          </div>
         </form>
+      </div>
+    </section>
+
+    <section class="studentModal teacherModal" id="teacherModal" aria-modal="true" role="dialog">
+      <div class="studentCard teacherLoginCard">
+        <h2>Acceso del profesor</h2>
+        <p>Ingresa la clave para revisar los registros guardados en este navegador.</p>
+        <form id="teacherLoginForm">
+          <label for="teacherPasswordInput">Clave del profesor</label>
+          <input id="teacherPasswordInput" type="password" maxlength="40" autocomplete="current-password" required />
+          <p class="teacherLoginError" id="teacherLoginError" aria-live="polite"></p>
+          <div class="modalActions">
+            <button class="btn" id="closeTeacherLoginBtn" type="button">Cancelar</button>
+            <button class="btn primary" type="submit">Entrar</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="teacherDashboard" id="teacherDashboard" aria-modal="true" role="dialog" hidden>
+      <div class="teacherPanel">
+        <header class="teacherPanelHeader">
+          <div>
+            <h2>Panel del profesor</h2>
+            <p>Registros guardados por estudiante y por fase.</p>
+          </div>
+          <button class="btn" id="closeTeacherDashboardBtn" type="button">Cerrar</button>
+        </header>
+
+        <div class="teacherToolbar">
+          <button class="btn primary" id="exportAllRecordsBtn" type="button">Descargar datos</button>
+          <p id="teacherSummary">Sin datos guardados.</p>
+        </div>
+
+        <div class="teacherRecords" id="teacherRecords"></div>
       </div>
     </section>
   </main>
