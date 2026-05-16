@@ -26,15 +26,21 @@
             <div class="avatarFace" aria-hidden="true">
               <span></span>
             </div>
-            <div>
+            <div class="playerInfo">
               <strong>¡Hola, Explorador!</strong>
               <span id="menuStudentNameDisplay">Sin registrar</span>
               <b class="starCounter"><span aria-hidden="true">⭐</span> <span id="menuStarCountDisplay">0</span></b>
             </div>
+            <button class="logoutStudentBtn playerLogoutBtn dangerBtn" data-logout-student type="button" hidden>Salir</button>
           </div>
-          <button class="teacherAccessBtn" id="openTeacherMenuBtn" type="button" aria-label="Panel del profesor" title="Profesor">
-            <img src="img/profesor-icon.svg" alt="" aria-hidden="true" />
-          </button>
+          <div class="teacherActionsStack">
+            <button class="teacherAccessBtn" id="openTeacherMenuBtn" type="button" aria-label="Panel del profesor" title="Profesor">
+              <img src="img/profesor-icon.svg" alt="" aria-hidden="true" />
+            </button>
+            <button class="leaderboardMiniBtn" data-open-leaderboard type="button" aria-label="Tabla de clasificación" title="Tabla de clasificación">
+              <img src="img/leaderboard-icon.svg" alt="" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -121,21 +127,26 @@
       <header class="topbar gamebar">
         <h1>Ruta Numérica</h1>
         <div class="hud">
-          <div class="pill" id="studentBadge">
-            Estudiante: <span id="studentNameDisplay">Sin registrar</span>
+          <div class="hudStatus">
+            <div class="pill" id="studentBadge">
+              Estudiante: <span id="studentNameDisplay">Sin registrar</span>
+            </div>
+            <div class="pill starPill">
+              ⭐ <span id="starCountDisplay">0</span>
+            </div>
+            <div class="progressTrack" aria-hidden="true">
+              <span class="progressFill"></span>
+            </div>
+            <div class="pill">
+              Problema <span id="qIndex">1</span>/10
+            </div>
           </div>
-          <div class="pill starPill">
-            ⭐ <span id="starCountDisplay">0</span>
+          <div class="hudActions">
+            <button class="btn hudActionBtn homeAction" id="backToMenuBtn" type="button">Inicio</button>
+            <button class="btn hudActionBtn resetAction" id="resetPhaseBtn" type="button">Reiniciar fase</button>
+            <button class="btn hudActionBtn newAction" id="newGameBtn" type="button">Nueva partida</button>
+            <button class="btn hudActionBtn dangerBtn exitAction" data-logout-student type="button" hidden>Salir</button>
           </div>
-          <div class="progressTrack" aria-hidden="true">
-            <span class="progressFill"></span>
-          </div>
-          <div class="pill">
-            Problema <span id="qIndex">1</span>/10
-          </div>
-          <button class="btn" id="backToMenuBtn" type="button">Inicio</button>
-          <button class="btn" id="changeStudentBtn" type="button">Cambiar estudiante</button>
-          <button class="btn" id="newGameBtn" type="button">Nueva partida</button>
         </div>
       </header>
       <div class="phasebar-wrap game-tabs">
@@ -143,7 +154,7 @@
           <button class="phaseBtn" data-phase="concreta" type="button">🧩 Fase concreta</button>
           <button class="phaseBtn" data-phase="grafica" type="button" disabled>✏️ Fase gráfica</button>
           <button class="phaseBtn" data-phase="simbolica" type="button" disabled>🔢 Fase simbólica</button>
-          <button class="phaseBtn" data-phase="complementaria" type="button" disabled>🧠 Fase complementaria</button>
+          <button class="phaseBtn" data-phase="complementaria" type="button" disabled>🧠 Fase de aplicación</button>
         </nav>
       </div>
 
@@ -178,7 +189,7 @@
         <div class="row">
           <div class="panel" id="tokensPanel">
             <h2>Arrastra fichas</h2>
-            <p class="hint">Arrastra las fichas al cuadro de respuesta.</p>
+            <p class="hint">Arrastra o toca las fichas para responder.</p>
 
             <div class="tokens" id="tokenPool" aria-label="Fichas disponibles"></div>
           </div>
@@ -218,13 +229,21 @@
     <section class="studentModal" id="studentModal" aria-modal="true" role="dialog">
       <div class="studentCard">
         <h2>Registrar estudiante</h2>
-        <p>Escribe el nombre del estudiante para guardar sus respuestas en este navegador.</p>
+        <p>Ingresa el nombre y apellido del estudiante para guardar sus respuestas en este navegador.</p>
         <form id="studentForm">
-          <label for="studentNameInput">Nombre del estudiante</label>
-          <input id="studentNameInput" type="text" maxlength="80" autocomplete="name" required />
+          <div class="studentNameGrid">
+            <div class="studentField">
+              <label for="studentNameInput">Nombre</label>
+              <input id="studentNameInput" type="text" maxlength="40" autocomplete="given-name" required />
+            </div>
+            <div class="studentField">
+              <label for="studentLastNameInput">Apellido</label>
+              <input id="studentLastNameInput" type="text" maxlength="40" autocomplete="family-name" required />
+            </div>
+          </div>
           <div class="modalActions">
             <button class="btn" id="openTeacherStudentBtn" type="button">Profesor</button>
-            <button class="btn primary" type="submit">Entrar</button>
+            <button class="btn primary" type="submit">Registrarse</button>
           </div>
         </form>
       </div>
@@ -258,14 +277,43 @@
 
         <div class="teacherToolbar">
           <button class="btn primary" id="exportAllRecordsBtn" type="button">Descargar datos</button>
+          <button class="btn" data-open-leaderboard type="button">Ver tabla de clasificación</button>
           <p id="teacherSummary">Sin datos guardados.</p>
         </div>
 
         <div class="teacherRecords" id="teacherRecords"></div>
       </div>
     </section>
+
+    <section class="leaderboardModal" id="leaderboardModal" aria-modal="true" role="dialog" hidden>
+      <div class="leaderboardPanel">
+        <header class="leaderboardPanelHeader">
+          <div>
+            <h2>Tabla de clasificación</h2>
+            <p>Ordenada por el puntaje guardado de cada estudiante.</p>
+          </div>
+          <button class="btn" id="closeLeaderboardBtn" type="button">Cerrar</button>
+        </header>
+        <div class="leaderboardTableWrap">
+          <table class="leaderboardTable">
+            <thead>
+              <tr>
+                <th>Puesto</th>
+                <th>Estudiante</th>
+                <th>Puntaje</th>
+                <th>Partida</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardBody">
+              <tr><td colspan="4">Aún no hay puntajes guardados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </main>
 
+  <script src="js/cloud-config.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>

@@ -220,7 +220,7 @@ body{
   display:flex;
   align-items:center;
   justify-content:flex-end;
-  gap:34px;
+  gap:22px;
   justify-self:end;
 }
 
@@ -235,6 +235,10 @@ body{
   padding:13px 16px;
   border-radius:24px;
   color:#fff;
+}
+
+.playerInfo{
+  min-width:0;
 }
 
 .playerPanel strong,
@@ -279,12 +283,43 @@ body{
   white-space:nowrap;
 }
 
-.teacherAccessBtn{
+.logoutStudentBtn{
+  min-height:42px;
+  padding:8px 14px;
+  border:2px solid #b72020;
+  border-radius:13px;
+  background:linear-gradient(180deg, #ff6b6b, #d92121);
+  color:#fff;
+  box-shadow:0 5px 0 #9d1b1b, 0 10px 18px rgba(0,0,0,.15);
+  font-family:var(--font-title);
+  font-size:15px;
+  font-weight:900;
+  text-shadow:0 1px 0 rgba(0,0,0,.22);
+  cursor:pointer;
+}
+
+.logoutStudentBtn:hover{
+  filter:brightness(1.04);
+}
+
+.playerLogoutBtn{
+  margin-left:auto;
+  flex:0 0 auto;
+}
+
+.teacherActionsStack{
+  display:grid;
+  gap:12px;
+  justify-items:center;
+  flex:0 0 auto;
+}
+
+.teacherAccessBtn,
+.leaderboardMiniBtn{
   width:88px;
   height:88px;
   display:grid;
   place-items:center;
-  justify-self:end;
   padding:8px;
   border:4px solid rgba(255,255,255,.78);
   border-radius:18px;
@@ -292,23 +327,47 @@ body{
   cursor:pointer;
   box-shadow:0 8px 0 rgba(8,35,92,.35), 0 14px 24px rgba(0,0,0,.2);
   transition:transform .16s ease, box-shadow .16s ease;
+.leaderboardMiniBtn{
+  height:76px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.36), rgba(255,255,255,0) 42%),
+    linear-gradient(180deg, #fff8cf, #f0b53c);
+  border-color:#fff6b8;
+  box-shadow:0 8px 0 #b37d18, 0 14px 24px rgba(0,0,0,.2);
 }
 
-.teacherAccessBtn img{
+.teacherAccessBtn img,
+.leaderboardMiniBtn img{
   width:100%;
   height:100%;
   display:block;
   object-fit:contain;
 }
 
-.teacherAccessBtn:hover{
+.leaderboardMiniBtn img{
+  width:62px;
+  height:62px;
+  filter:drop-shadow(0 3px 0 rgba(130,93,17,.18));
+}
+
+.teacherAccessBtn:hover,
+.leaderboardMiniBtn:hover{
   transform:translateY(-2px);
   box-shadow:0 10px 0 rgba(8,35,92,.35), 0 18px 28px rgba(0,0,0,.22);
 }
 
-.teacherAccessBtn:active{
+.leaderboardMiniBtn:hover{
+  box-shadow:0 10px 0 #b37d18, 0 18px 28px rgba(0,0,0,.22);
+}
+
+.teacherAccessBtn:active,
+.leaderboardMiniBtn:active{
   transform:translateY(3px);
   box-shadow:0 4px 0 rgba(8,35,92,.35), 0 10px 18px rgba(0,0,0,.18);
+}
+
+.leaderboardMiniBtn:active{
+  box-shadow:0 4px 0 #b37d18, 0 10px 18px rgba(0,0,0,.18);
 }
 
 .avatarFace{
@@ -1118,6 +1177,126 @@ body{
   border-color:#e9ffd5;
 }
 
+.leaderboardAccessBtn{
+  width:min(440px, 92%);
+  min-height:62px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  margin:18px auto 0;
+  padding:14px 22px;
+  border-radius:18px;
+  border:3px solid rgba(255,255,255,.72);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,0) 44%),
+    linear-gradient(180deg, #fff8cf, #f0b53c);
+  color:#2d2409;
+  box-shadow:0 7px 0 #b37d18, 0 15px 24px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.82);
+  font-family:var(--font-title);
+  font-size:24px;
+  font-weight:900;
+  cursor:pointer;
+  text-shadow:0 1px 0 rgba(255,255,255,.55);
+  transition:transform .14s ease, filter .14s ease, box-shadow .14s ease;
+}
+
+.leaderboardAccessBtn span{
+  display:grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  border-radius:12px;
+  background:rgba(255,255,255,.42);
+  box-shadow:inset 0 0 0 1px rgba(130,93,17,.12);
+}
+
+.leaderboardAccessBtn:hover{
+  filter:brightness(1.04);
+  transform:translateY(-1px);
+}
+
+.leaderboardAccessBtn:active{
+  transform:translateY(4px);
+  box-shadow:0 3px 0 #b37d18, 0 9px 18px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.82);
+}
+
+.leaderboardModal{
+  position:fixed;
+  inset:0;
+  z-index:40;
+  display:grid;
+  place-items:center;
+  padding:18px;
+  background:rgba(10,25,55,.78);
+}
+
+.leaderboardPanel{
+  width:min(820px, calc(100vw - 36px));
+  max-height:calc(100vh - 36px);
+  overflow:auto;
+  padding:22px;
+  border-radius:24px;
+  background:linear-gradient(180deg, #f9fdff, #eef6ff);
+  border:3px solid #bfe4ff;
+  box-shadow:0 24px 54px rgba(0,0,0,.28);
+}
+
+.leaderboardPanelHeader{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:14px;
+}
+
+.leaderboardPanelHeader h2{
+  margin:0;
+  font-family:var(--font-title);
+  color:#162646;
+}
+
+.leaderboardPanelHeader p{
+  margin:4px 0 0;
+  color:#4e5d72;
+  font-weight:800;
+}
+
+.leaderboardTableWrap{
+  overflow:auto;
+  border-radius:14px;
+  border:1px solid #d8e8f5;
+  background:#fff;
+}
+
+.leaderboardTable{
+  width:100%;
+  border-collapse:collapse;
+  font-size:15px;
+}
+
+.leaderboardTable th,
+.leaderboardTable td{
+  padding:10px 12px;
+  text-align:left;
+  border-bottom:1px solid #e4eef8;
+}
+
+.leaderboardTable tr:last-child td{
+  border-bottom:0;
+}
+
+.leaderboardTable th{
+  background:#eef7ff;
+  color:#1d3151;
+  font-family:var(--font-title);
+}
+
+.leaderboardTable td:first-child,
+.leaderboardTable td:last-child{
+  font-weight:900;
+}
+
 .gameScreen{
   position:relative;
   max-width:min(1536px, 100%);
@@ -1153,7 +1332,7 @@ body{
     justify-self:center;
   }
 
-  .teacherAccessBtn{
+  .teacherActionsStack{
     justify-self:center;
   }
 
@@ -1250,11 +1429,17 @@ body{
     min-width:0;
   }
 
-  .teacherAccessBtn{
+  .teacherAccessBtn,
+  .leaderboardMiniBtn{
     width:78px;
     height:78px;
     flex:0 0 78px;
     justify-self:end;
+  }
+
+  .leaderboardMiniBtn img{
+    width:56px;
+    height:56px;
   }
 
   .soundButton{
@@ -1502,6 +1687,7 @@ h1{
   padding:10px;
   min-width:150px;
   flex:1 1 150px;
+  cursor:pointer;
 }
 
 .group.dragover{
@@ -1640,6 +1826,7 @@ h1{
   overflow:hidden;
   cursor:crosshair;
   user-select:none;
+  touch-action:none;
 }
 
 .drawCount{
@@ -1811,6 +1998,14 @@ h1{
   border-color:#4a9c23;
 }
 
+.btn.dangerBtn{
+  background:linear-gradient(180deg, #ff6b6b, #d92121);
+  border-color:#b72020;
+  color:#fff;
+  text-shadow:0 1px 0 rgba(0,0,0,.22);
+  box-shadow:0 5px 0 #9d1b1b, 0 10px 18px rgba(146,24,24,.18);
+}
+
 .btn:hover{
   filter:brightness(1.05);
 }
@@ -1864,6 +2059,17 @@ h1{
 .studentCard form{
   display:grid;
   gap:10px;
+}
+
+.studentNameGrid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:12px;
+}
+
+.studentField{
+  display:grid;
+  gap:6px;
 }
 
 .studentCard label{
@@ -2361,10 +2567,32 @@ h1{
 
 .gameScreen .hud{
   min-width:0;
-  flex:1 1 auto;
-  flex-wrap:wrap;
-  justify-content:flex-end;
+  display:grid;
+  grid-template-columns:minmax(520px, 1fr) auto;
+  align-items:center;
+  gap:14px;
+}
+
+.gameScreen .hudStatus,
+.gameScreen .hudActions{
+  min-width:0;
+  display:flex;
+  align-items:center;
   gap:10px;
+}
+
+.gameScreen .hudStatus{
+  justify-content:flex-end;
+}
+
+.gameScreen .hudActions{
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  padding:8px;
+  border-radius:22px;
+  background:rgba(22,66,144,.18);
+  border:1px solid rgba(198,224,255,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
 }
 
 .gameScreen .pill{
@@ -2383,7 +2611,9 @@ h1{
 }
 
 .gameScreen .progressTrack{
-  width:220px;
+  flex:1 1 190px;
+  min-width:140px;
+  max-width:280px;
   height:11px;
   background:rgba(218,229,245,.72);
   border:1px solid rgba(113,146,199,.42);
@@ -2391,6 +2621,9 @@ h1{
 }
 
 .gameScreen .progressFill{
+  width:0%;
+  min-width:0;
+  transform-origin:left center;
   background:linear-gradient(90deg, #f2d35f 0%, #91d360 34%, #58c8ef 68%, #856ee7 100%);
 }
 
@@ -2408,12 +2641,115 @@ h1{
   white-space:nowrap;
 }
 
+.gameScreen .hudActions .hudActionBtn{
+  --btn-top:#ffffff;
+  --btn-bottom:#edf5ff;
+  --btn-border:#c2ddfb;
+  --btn-ink:#13213e;
+  --btn-shadow:#9dbce7;
+  min-height:54px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:11px 18px;
+  border:2px solid var(--btn-border);
+  border-radius:18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0) 42%),
+    linear-gradient(180deg, var(--btn-top), var(--btn-bottom));
+  color:var(--btn-ink);
+  box-shadow:
+    0 5px 0 var(--btn-shadow),
+    0 12px 18px rgba(24,46,82,.12),
+    inset 0 1px 0 rgba(255,255,255,.95);
+  text-shadow:none;
+  transition:transform .14s ease, filter .14s ease, box-shadow .14s ease;
+}
+
+.gameScreen .hudActions .hudActionBtn::before{
+  width:26px;
+  height:26px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  background:rgba(83,128,212,.12);
+  color:#315aa5;
+  font-size:18px;
+  line-height:1;
+  box-shadow:inset 0 0 0 1px rgba(72,112,190,.12);
+}
+
+.gameScreen .hudActions .homeAction::before{
+  content:"⌂";
+}
+
+.gameScreen .hudActions .resetAction{
+  --btn-top:#f9fcff;
+  --btn-bottom:#e8f4ff;
+  --btn-border:#add5fb;
+  --btn-shadow:#8eb7e7;
+}
+
+.gameScreen .hudActions .resetAction::before{
+  content:"↻";
+}
+
+.gameScreen .hudActions .newAction{
+  --btn-top:#fffdf2;
+  --btn-bottom:#fff2c8;
+  --btn-border:#f2d46c;
+  --btn-ink:#392b0b;
+  --btn-shadow:#d3a640;
+}
+
+.gameScreen .hudActions .newAction::before{
+  content:"+";
+  background:rgba(222,163,40,.16);
+  color:#a57209;
+}
+
+.gameScreen .hudActions .hudActionBtn:hover{
+  filter:brightness(1.045);
+  transform:translateY(-1px);
+}
+
+.gameScreen .hudActions .hudActionBtn:active{
+  transform:translateY(3px);
+  box-shadow:
+    0 2px 0 var(--btn-shadow),
+    0 7px 12px rgba(24,46,82,.12),
+    inset 0 1px 0 rgba(255,255,255,.95);
+}
+
 .gameScreen .btn.primary{
   background:linear-gradient(180deg, #8bd35e 0%, #68b742 100%);
   border-color:#4e9a2e;
   color:#fff;
   text-shadow:0 1px 0 rgba(0,0,0,.18);
   box-shadow:0 4px 0 #4d942f, 0 14px 22px rgba(59,103,41,.18);
+}
+
+.gameScreen .btn.dangerBtn{
+  --btn-top:#ff7777;
+  --btn-bottom:#dc2c2c;
+  --btn-border:#b72020;
+  --btn-ink:#fff;
+  --btn-shadow:#9d1b1b;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,0) 42%),
+    linear-gradient(180deg, var(--btn-top), var(--btn-bottom));
+  border-color:var(--btn-border);
+  color:#fff;
+  text-shadow:0 1px 0 rgba(0,0,0,.22);
+  box-shadow:0 5px 0 var(--btn-shadow), 0 10px 18px rgba(146,24,24,.18);
+}
+
+.gameScreen .hudActions .dangerBtn::before{
+  content:"×";
+  background:rgba(255,255,255,.18);
+  color:#fff;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);
 }
 
 .gameScreen .phasebar-wrap.game-tabs{
@@ -2623,7 +2959,11 @@ h1{
   }
 
   .gameScreen .hud{
-    flex-wrap:wrap;
+    grid-template-columns:1fr;
+  }
+
+  .gameScreen .hudStatus,
+  .gameScreen .hudActions{
     justify-content:flex-start;
   }
 
@@ -2644,12 +2984,16 @@ h1{
   }
 
   .gameScreen .hud{
-    justify-content:flex-start;
+    grid-template-columns:1fr;
+  }
+
+  .gameScreen .hudStatus{
+    flex-wrap:wrap;
   }
 
   .gameScreen .progressTrack{
-    width:100%;
-    max-width:260px;
+    flex:1 1 100%;
+    max-width:none;
   }
 
   .gameScreen > .card{
@@ -2696,5 +3040,234 @@ h1{
   .gameScreen .visual .op-img{
     width:44px;
     height:44px;
+  }
+}
+
+@media (max-width: 700px){
+  .mainMenu{
+    min-height:100dvh;
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+
+  .menuTopbar{
+    grid-template-columns:minmax(0, 1fr);
+  }
+
+  .menuAccountArea{
+    width:100%;
+    gap:10px;
+    align-items:stretch;
+  }
+
+  .playerPanel{
+    flex:1 1 220px;
+    min-width:0;
+    padding:10px 12px;
+    border-radius:18px;
+  }
+
+  .avatarFace{
+    width:58px;
+    height:58px;
+    border-width:4px;
+    box-shadow:0 4px 0 #174a9f;
+  }
+
+  .playerPanel strong{
+    font-size:16px;
+    line-height:1.05;
+  }
+
+  .playerPanel span{
+    max-width:126px;
+  }
+
+  .playerPanel b{
+    font-size:18px;
+  }
+
+  .playerLogoutBtn{
+    min-height:38px;
+    padding:7px 12px;
+  }
+
+  .teacherAccessBtn,
+  .leaderboardMiniBtn{
+    width:66px;
+    height:66px;
+    flex:0 0 66px;
+    border-radius:15px;
+  }
+
+  .leaderboardMiniBtn img{
+    width:48px;
+    height:48px;
+  }
+
+  .leaderboardTable{
+    font-size:14px;
+  }
+
+  .leaderboardPanel{
+    padding:16px;
+  }
+
+  .leaderboardPanelHeader{
+    flex-direction:column;
+  }
+
+  .gameScreen .topbar.gamebar{
+    padding:14px;
+    gap:12px;
+    border-radius:20px;
+  }
+
+  .gameScreen .hud{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:9px;
+  }
+
+  .gameScreen .hudStatus,
+  .gameScreen .hudActions{
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:9px;
+  }
+
+  .gameScreen #studentBadge,
+  .gameScreen .progressTrack{
+    grid-column:1 / -1;
+  }
+
+  .gameScreen .pill{
+    min-width:0;
+    width:100%;
+    justify-content:center;
+    text-align:center;
+    white-space:normal;
+  }
+
+  .gameScreen #studentNameDisplay{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .gameScreen .btn{
+    width:100%;
+    white-space:normal;
+    line-height:1.05;
+  }
+
+  .gameScreen .hudActions{
+    padding:7px;
+    border-radius:18px;
+  }
+
+  .gameScreen .hudActions .hudActionBtn{
+    min-height:50px;
+    padding:9px 12px;
+    border-radius:15px;
+  }
+
+  .gameScreen .hudActions .hudActionBtn::before{
+    width:24px;
+    height:24px;
+    border-radius:9px;
+  }
+
+  .gameScreen .phasebar-wrap.game-tabs{
+    width:100%;
+    min-height:auto;
+    padding:8px;
+    border-radius:14px;
+  }
+
+  .gameScreen .phasebar{
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:8px;
+  }
+
+  .gameScreen .phaseBtn{
+    width:100%;
+    min-height:54px;
+    white-space:normal;
+    line-height:1.05;
+  }
+
+  .gameScreen > .card{
+    padding:18px 14px;
+  }
+
+  .gameScreen .visual.concrete{
+    justify-content:center;
+  }
+
+  .gameScreen .obj-item,
+  .gameScreen .token{
+    width:46px;
+    height:46px;
+    border-radius:14px;
+  }
+
+  .gameScreen .obj-item img,
+  .gameScreen .token img{
+    width:29px;
+    height:29px;
+  }
+
+  .gameScreen .group{
+    min-width:0;
+    flex:1 1 100%;
+  }
+
+  .drawZone{
+    min-height:160px;
+  }
+
+  .studentCard{
+    max-height:calc(100dvh - 28px);
+    overflow:auto;
+    padding:18px;
+  }
+
+  .studentNameGrid{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width: 430px){
+  .menuTitle{
+    font-size:48px;
+  }
+
+  .menuRibbon{
+    max-width:100%;
+  }
+
+  .gameScreen .hud,
+  .gameScreen .hudStatus,
+  .gameScreen .hudActions,
+  .gameScreen .phasebar,
+  .optionsWrap,
+  .gameScreen .optionsWrap{
+    grid-template-columns:1fr;
+  }
+
+  .gameScreen .topbar h1{
+    font-size:30px;
+  }
+
+  .gameScreen .pill,
+  .gameScreen .btn,
+  .gameScreen .phaseBtn{
+    min-height:46px;
+    padding:9px 12px;
   }
 }

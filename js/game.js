@@ -72,6 +72,7 @@ const answerCountEl = document.getElementById("answerCount");
 const answerSummaryWrapEl = answerCountEl.parentElement;
 const feedbackEl = document.getElementById("feedback");
 const tokensPanelEl = document.getElementById("tokensPanel");
+const tokensHintEl = tokensPanelEl ? tokensPanelEl.querySelector(".hint") : null;
 const answerPanelEl = document.getElementById("answerPanel");
 const graphicWorkspaceEl = document.getElementById("graphicWorkspace");
 const drawToolsEl = document.getElementById("drawTools");
@@ -101,14 +102,21 @@ const phaseBtns = Array.from(document.querySelectorAll(".phaseBtn"));
 const studentModalEl = document.getElementById("studentModal");
 const studentFormEl = document.getElementById("studentForm");
 const studentNameInputEl = document.getElementById("studentNameInput");
+const studentLastNameInputEl = document.getElementById("studentLastNameInput");
 const studentNameDisplayEl = document.getElementById("studentNameDisplay");
 const menuStudentNameDisplayEl = document.getElementById("menuStudentNameDisplay");
 const menuStarCountDisplayEl = document.getElementById("menuStarCountDisplay");
 const starCountDisplayEl = document.getElementById("starCountDisplay");
-const changeStudentBtnEl = document.getElementById("changeStudentBtn");
+const leaderboardBodyEl = document.getElementById("leaderboardBody");
+const openLeaderboardBtns = Array.from(document.querySelectorAll("[data-open-leaderboard]"));
+const leaderboardModalEl = document.getElementById("leaderboardModal");
+const closeLeaderboardBtnEl = document.getElementById("closeLeaderboardBtn");
+const logoutStudentBtns = Array.from(document.querySelectorAll("[data-logout-student]"));
 const menuScreenEl = document.getElementById("menuScreen");
 const gameScreenEl = document.getElementById("gameScreen");
 const backToMenuBtnEl = document.getElementById("backToMenuBtn");
+const resetPhaseBtnEl = document.getElementById("resetPhaseBtn");
+const newGameBtnEl = document.getElementById("newGameBtn");
 const playPhaseBtns = Array.from(document.querySelectorAll(".playPhaseBtn"));
 const menuPhaseCards = Array.from(document.querySelectorAll("[data-phase-card]"));
 const menuNavBtns = Array.from(document.querySelectorAll(".menuNavBtn"));
@@ -133,15 +141,24 @@ const STORAGE_KEYS = {
   sessions: "matedrag.sessions",
 };
 
+const CLOUD_CONFIG = window.MATEDRAG_CLOUD || {};
+const CLOUD_TIMEOUT_MS = 4500;
+
 let studentName = "";
 let sessionLog = null;
 let soundEnabled = true;
+let suppressHistoryUpdate = false;
 
 clearBtnEl.addEventListener("click", clearAnswer);
 checkBtnEl.addEventListener("click", checkAnswer);
-document.getElementById("newGameBtn").addEventListener("click", newGame);
-changeStudentBtnEl.addEventListener("click", () => openStudentModal(true));
+newGameBtnEl.addEventListener("click", confirmNewGame);
+if (resetPhaseBtnEl) {
+  resetPhaseBtnEl.addEventListener("click", confirmPhaseRestart);
+}
 backToMenuBtnEl.addEventListener("click", () => showMainMenu("inicio"));
+logoutStudentBtns.forEach((btn) => {
+  btn.addEventListener("click", logoutStudent);
+});
 numericAnswerEl.addEventListener("input", () => {
   const value = Number.parseInt(numericAnswerEl.value, 10);
   game.answer = Number.isFinite(value) ? value : 0;
@@ -202,6 +219,19 @@ if (closeTeacherDashboardBtnEl) {
 if (exportAllRecordsBtnEl) {
   exportAllRecordsBtnEl.addEventListener("click", exportAllRecords);
 }
+
+openLeaderboardBtns.forEach((btn) => {
+  btn.addEventListener("click", openLeaderboard);
+});
+
+if (closeLeaderboardBtnEl) {
+  closeLeaderboardBtnEl.addEventListener("click", closeLeaderboard);
+}
+
+window.addEventListener("beforeunload", () => {
+  saveCurrentGameState(false);
+  saveSessionLog();
+});
 
 dropzoneEl.addEventListener("dragover", (e) => {
   e.preventDefault();
@@ -403,6 +433,10 @@ function createSessionLog(name) {
     currentPhase: "concreta",
     unlockedIndex: 0,
     starCount: 0,
+    gameNumber: 1,
+    events: [],
+    gameState: null,
+    lastView: "menu",
     phases: createEmptyPhaseBuckets(),
   };
 }
@@ -416,6 +450,22 @@ function loadStoredJson(key) {
   }
 }
 
+function normalizeGameState(state) {
+  if (!state || typeof state !== "object") return null;
+  const statePhase = PHASES.includes(state.phase) ? state.phase : null;
+  const questions = Array.isArray(state.questions) ? state.questions : [];
+  if (!statePhase || questions.length === 0) return null;
+  const current = Number(state.current);
+  return {
+    phase: statePhase,
+    questions,
+    current: Number.isFinite(current)
+      ? Math.max(0, Math.min(questions.length, current))
+      : 0,
+    completed: Boolean(state.completed),
+  };
+}
+
 function normalizeSessionLog(session) {
   const now = new Date().toISOString();
   const safeSession = session && typeof session === "object" ? session : {};
@@ -427,15 +477,26 @@ function normalizeSessionLog(session) {
       : [];
     phases[phaseKey] = entries.map((entry) => ({
       ...entry,
+      recordType: entry.recordType || "answer",
+      gameNumber: Number.isFinite(Number(entry.gameNumber)) ? Math.max(1, Number(entry.gameNumber)) : 1,
       starsEarned: Number.isFinite(Number(entry.starsEarned))
         ? Number(entry.starsEarned)
         : (entry.isCorrect ? POINTS_PER_CORRECT_ANSWER : 0),
     }));
   });
   const savedStars = Number(safeSession.starCount);
+  const savedGameNumber = Number(safeSession.gameNumber);
+  const normalizedGameNumber = Number.isFinite(savedGameNumber) ? Math.max(1, savedGameNumber) : 1;
+  const events = Array.isArray(safeSession.events)
+    ? safeSession.events.map((event) => ({
+      ...event,
+      gameNumber: Number.isFinite(Number(event.gameNumber)) ? Math.max(1, Number(event.gameNumber)) : 1,
+      happenedAt: event.happenedAt || event.answeredAt || now,
+    }))
+    : [];
   const derivedStars = PHASES
     .flatMap((phaseKey) => phases[phaseKey])
-    .filter((entry) => entry.isCorrect)
+    .filter((entry) => entry.isCorrect && !entry.resetExcluded && (Number(entry.gameNumber) || 1) === normalizedGameNumber)
     .length * POINTS_PER_CORRECT_ANSWER;
 
   return {
@@ -446,6 +507,10 @@ function normalizeSessionLog(session) {
     currentPhase: PHASES.includes(safeSession.currentPhase) ? safeSession.currentPhase : "concreta",
     unlockedIndex: getUnlockedIndexFromSession({ ...safeSession, phases }),
     starCount: Number.isFinite(savedStars) ? Math.max(0, savedStars) : derivedStars,
+    gameNumber: normalizedGameNumber,
+    events,
+    gameState: normalizeGameState(safeSession.gameState),
+    lastView: safeSession.lastView === "game" ? "game" : "menu",
     phases,
   };
 }
@@ -454,9 +519,11 @@ function getUnlockedIndexFromSession(session) {
   const savedIndex = Number.isFinite(session.unlockedIndex)
     ? Math.max(0, Math.min(PHASES.length - 1, session.unlockedIndex))
     : 0;
+  const currentGameNumber = Math.max(1, Number(session.gameNumber) || 1);
   const derivedIndex = PHASES.reduce((maxIndex, phaseKey, index) => {
     const entries = session.phases && Array.isArray(session.phases[phaseKey]) ? session.phases[phaseKey] : [];
-    if (entries.length >= TOTAL_QUESTIONS && index < PHASES.length - 1) {
+    const activeEntries = entries.filter((entry) => !entry.resetExcluded && (Number(entry.gameNumber) || 1) === currentGameNumber);
+    if (activeEntries.length >= TOTAL_QUESTIONS && index < PHASES.length - 1) {
       return Math.max(maxIndex, index + 1);
     }
     return maxIndex;
@@ -477,6 +544,113 @@ function saveStoredSessions(sessions) {
   localStorage.setItem(STORAGE_KEYS.sessions, JSON.stringify(sessions));
 }
 
+function isCloudConfigured() {
+  const url = String(CLOUD_CONFIG.firebaseDatabaseURL || "").trim();
+  return Boolean(
+    CLOUD_CONFIG.enabled
+    && url
+    && !url.includes("TU-PROYECTO")
+    && /^https:\/\/.+\.firebaseio\.com|^https:\/\/.+\.firebasedatabase\.app/.test(url)
+  );
+}
+
+function cloudRootPath() {
+  return String(CLOUD_CONFIG.rootPath || "ruta-numerica")
+    .replace(/^\/+|\/+$/g, "")
+    .replace(/[^a-zA-Z0-9_-]/g, "-");
+}
+
+function cloudUrl(path = "") {
+  const base = String(CLOUD_CONFIG.firebaseDatabaseURL || "").replace(/\/+$/g, "");
+  const cleanPath = [cloudRootPath(), path].filter(Boolean).join("/").replace(/^\/+|\/+$/g, "");
+  return `${base}/${cleanPath}.json`;
+}
+
+async function cloudFetch(path, options = {}) {
+  if (!isCloudConfigured() || typeof fetch !== "function") return null;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), CLOUD_TIMEOUT_MS);
+  try {
+    const response = await fetch(cloudUrl(path), {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Firebase respondió ${response.status}`);
+    }
+    return await response.json();
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function mergeSessionCollections(localSessions, cloudSessions) {
+  const merged = { ...(localSessions || {}) };
+  Object.entries(cloudSessions || {}).forEach(([sessionId, cloudSession]) => {
+    if (!cloudSession) return;
+    const normalizedCloud = normalizeSessionLog({ ...cloudSession, id: cloudSession.id || sessionId });
+    const localSession = merged[sessionId] ? normalizeSessionLog(merged[sessionId]) : null;
+    const cloudTime = new Date(normalizedCloud.updatedAt || normalizedCloud.startedAt || 0).getTime();
+    const localTime = localSession ? new Date(localSession.updatedAt || localSession.startedAt || 0).getTime() : -1;
+    if (!localSession || cloudTime >= localTime) {
+      merged[normalizedCloud.id] = normalizedCloud;
+    }
+  });
+  return merged;
+}
+
+async function syncCloudSessions() {
+  if (!isCloudConfigured()) return false;
+  try {
+    const cloudSessions = await cloudFetch("sessions", { method: "GET" });
+    const localSessions = loadStoredJson(STORAGE_KEYS.sessions) || {};
+    const merged = mergeSessionCollections(localSessions, cloudSessions || {});
+    saveStoredSessions(merged);
+    if (sessionLog && merged[sessionLog.id]) {
+      sessionLog = normalizeSessionLog(merged[sessionLog.id]);
+      studentName = sessionLog.studentName;
+      phase = sessionLog.currentPhase;
+      unlockedIndex = getUnlockedIndexFromSession(sessionLog);
+      setStudentNameUI();
+      updatePhaseButtons();
+    }
+    renderLeaderboards();
+    return true;
+  } catch (error) {
+    console.warn("No se pudo sincronizar con la base de datos en la nube.", error);
+    return false;
+  }
+}
+
+function saveSessionToCloud(session) {
+  if (!isCloudConfigured() || !session) return;
+  const payload = JSON.parse(JSON.stringify(session));
+  cloudFetch(`sessions/${encodeURIComponent(payload.id)}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  }).catch((error) => {
+    console.warn("No se pudo guardar la sesión en la nube.", error);
+  });
+}
+
+function getCurrentGameNumber() {
+  return sessionLog ? Math.max(1, Number(sessionLog.gameNumber) || 1) : 1;
+}
+
+function saveCurrentGameState(completed = false) {
+  if (!sessionLog || !Array.isArray(game.questions) || game.questions.length === 0) return;
+  sessionLog.gameState = {
+    phase,
+    questions: game.questions,
+    current: Math.max(0, Math.min(game.current, game.questions.length)),
+    completed: Boolean(completed),
+  };
+}
+
 function saveSessionLog() {
   if (!sessionLog) return;
   sessionLog.updatedAt = new Date().toISOString();
@@ -486,6 +660,8 @@ function saveSessionLog() {
   const sessions = loadStoredSessions();
   sessions[sessionLog.id] = sessionLog;
   saveStoredSessions(sessions);
+  saveSessionToCloud(sessionLog);
+  renderLeaderboards();
 }
 
 function getSessionById(sessionId) {
@@ -506,24 +682,70 @@ function setMainNavActive(target) {
   });
 }
 
+function syncBrowserHistory(view, mode = "auto") {
+  if (suppressHistoryUpdate || !window.history || typeof window.history.pushState !== "function") return;
+  const state = { view };
+  const currentView = window.history.state && window.history.state.view;
+
+  if (mode === "replace") {
+    window.history.replaceState(state, "", window.location.href);
+    return;
+  }
+
+  if (view === "game" && currentView !== "game") {
+    window.history.pushState(state, "", window.location.href);
+  } else if (view === "menu" && currentView !== "menu") {
+    window.history.replaceState(state, "", window.location.href);
+  }
+}
+
+function setupBrowserNavigation() {
+  if (!window.history || typeof window.history.replaceState !== "function") return;
+  window.history.replaceState({ view: "menu" }, "", window.location.href);
+  window.addEventListener("popstate", () => {
+    suppressHistoryUpdate = true;
+    showMainMenu("inicio");
+    suppressHistoryUpdate = false;
+  });
+}
+
 function showMainMenu(activeNav = "inicio") {
   if (drawState.active) stopGraphicDraw();
   menuScreenEl.hidden = false;
   gameScreenEl.hidden = true;
   setMainNavActive(activeNav);
   updatePhaseButtons();
+  if (sessionLog) {
+    sessionLog.lastView = "menu";
+    saveSessionLog();
+  }
+  syncBrowserHistory("menu", "replace");
 }
 
 function showGameView(activeNav = "juegos") {
   menuScreenEl.hidden = true;
   gameScreenEl.hidden = false;
   setMainNavActive(activeNav);
+  if (sessionLog) {
+    sessionLog.lastView = "game";
+    saveCurrentGameState(false);
+    saveSessionLog();
+  }
+  syncBrowserHistory("game");
+}
+
+function showSavedView() {
+  if (sessionLog && sessionLog.lastView === "game") {
+    showGameView("juegos");
+    return;
+  }
+  showMainMenu("inicio");
 }
 
 function handleMenuNav(action) {
   if (action === "juegos") {
     showGameView("juegos");
-    if (!game.questions.length) newGame();
+    if (!game.questions.length) restoreCurrentGame();
     return;
   }
 
@@ -545,7 +767,9 @@ function startPhaseFromMenu(targetPhase) {
     return;
   }
 
-  setPhase(targetPhase);
+  if (targetPhase !== phase || !game.questions.length) {
+    setPhase(targetPhase);
+  }
   showGameView("juegos");
 }
 
@@ -554,6 +778,9 @@ function setStudentNameUI() {
   if (menuStudentNameDisplayEl) {
     menuStudentNameDisplayEl.textContent = studentName || "Sin registrar";
   }
+  logoutStudentBtns.forEach((btn) => {
+    btn.hidden = !studentName;
+  });
   updateStarCountUI();
 }
 
@@ -567,7 +794,7 @@ function updateStarCountUI() {
   }
 }
 
-function updateProgressBar(currentStep = game.current + 1) {
+function updateProgressBar(currentStep = game.current) {
   if (!progressFillEl) return;
   const safeStep = Math.max(0, Math.min(TOTAL_QUESTIONS, currentStep));
   const percent = (safeStep / TOTAL_QUESTIONS) * 100;
@@ -588,8 +815,8 @@ function phaseLabel(phaseKey) {
     case "concreta": return "Fase concreta";
     case "grafica": return "Fase gráfica";
     case "simbolica": return "Fase simbólica";
-    case "complementaria": return "Fase complementaria";
-    default: return phaseKey;
+    case "complementaria": return "Fase de aplicación";
+    default: return phaseKey || "Sin fase";
   }
 }
 
@@ -633,6 +860,9 @@ function addAttemptRecord(entry) {
   if (!sessionLog.phases[entry.phase]) {
     sessionLog.phases[entry.phase] = [];
   }
+  entry.recordType = "answer";
+  entry.gameNumber = getCurrentGameNumber();
+  entry.resetExcluded = false;
   if (entry.isCorrect) {
     sessionLog.starCount = (Number(sessionLog.starCount) || 0) + POINTS_PER_CORRECT_ANSWER;
     entry.starsEarned = POINTS_PER_CORRECT_ANSWER;
@@ -641,6 +871,28 @@ function addAttemptRecord(entry) {
   }
   sessionLog.phases[entry.phase].push(entry);
   updateStarCountUI();
+  saveSessionLog();
+  if (errorsPanel.style.display === "block") {
+    renderSessionLog();
+  }
+  if (teacherDashboardEl && !teacherDashboardEl.hidden) {
+    renderTeacherDashboard();
+  }
+}
+
+function addSessionEvent(type, description, targetPhase = phase) {
+  if (!sessionLog) return;
+  if (!Array.isArray(sessionLog.events)) {
+    sessionLog.events = [];
+  }
+  sessionLog.events.push({
+    recordType: "event",
+    type,
+    description,
+    phase: targetPhase,
+    gameNumber: getCurrentGameNumber(),
+    happenedAt: new Date().toISOString(),
+  });
   saveSessionLog();
   if (errorsPanel.style.display === "block") {
     renderSessionLog();
@@ -662,10 +914,27 @@ function renderSessionLog() {
   const summaryHtml = `
     <div class="recordSummary">
       <strong>Estudiante:</strong> ${escapeHtml(sessionLog.studentName)}<br>
+      <strong>Partida actual:</strong> ${escapeHtml(getCurrentGameNumber())}<br>
       <strong>Estrellas:</strong> ${escapeHtml(sessionLog.starCount || 0)}<br>
       <strong>Respuestas guardadas:</strong> ${totalAnswers}<br>
       <strong>Correctas:</strong> ${totalCorrect}<br>
       <strong>Incorrectas:</strong> ${totalAnswers - totalCorrect}
+    </div>
+  `;
+
+  const events = Array.isArray(sessionLog.events) ? sessionLog.events : [];
+  const eventsHtml = `
+    <div class="recordPhase">
+      <h3>Eventos de partida</h3>
+      ${events.length
+        ? events.map((event) => `
+          <div class="recordItem">
+            <strong>Partida ${escapeHtml(event.gameNumber || 1)} · ${escapeHtml(formatDateTime(event.happenedAt))}</strong><br>
+            <span><strong>Fase:</strong> ${escapeHtml(phaseLabel(event.phase))}</span><br>
+            <span><strong>Evento:</strong> ${escapeHtml(event.description)}</span>
+          </div>
+        `).join("")
+        : "<p>Aún no hay reinicios registrados.</p>"}
     </div>
   `;
 
@@ -682,7 +951,8 @@ function renderSessionLog() {
     }
     const items = entries.map((entry, index) => `
       <div class="recordItem ${entry.isCorrect ? "ok" : "bad"}">
-        <strong>${index + 1}. ${entry.isCorrect ? "Correcta" : "Incorrecta"}</strong><br>
+        <strong>${index + 1}. ${entry.isCorrect ? "Correcta" : "Incorrecta"}${entry.resetExcluded ? " (fase reiniciada)" : ""}</strong><br>
+        <span><strong>Partida:</strong> ${escapeHtml(entry.gameNumber || 1)}</span><br>
         <span><strong>Operación:</strong> ${escapeHtml(operationLabel(entry.operation))}</span><br>
         <span><strong>Problema:</strong> ${escapeHtml(entry.problem)}</span><br>
         <span><strong>Respuesta del estudiante:</strong> ${escapeHtml(entry.studentAnswer)}</span><br>
@@ -694,7 +964,7 @@ function renderSessionLog() {
     return `${header}${items}</div>`;
   }).join("");
 
-  errorsList.innerHTML = summaryHtml + phaseHtml;
+  errorsList.innerHTML = summaryHtml + eventsHtml + phaseHtml;
 }
 
 function exportSessionLog() {
@@ -737,8 +1007,74 @@ function formatDateTime(value) {
   });
 }
 
+function buildLeaderboardRows() {
+  const byStudent = new Map();
+  Object.values(loadStoredSessions()).forEach((session) => {
+    const key = session.studentName.toLowerCase();
+    const entries = getSessionEntries(session);
+    const currentGameNumber = Math.max(1, Number(session.gameNumber) || 1);
+    const activeEntries = entries.filter((entry) => !entry.resetExcluded && (Number(entry.gameNumber) || 1) === currentGameNumber);
+    const correctCount = activeEntries.filter((entry) => entry.isCorrect).length;
+    const score = Number(session.starCount) || 0;
+    const updatedAt = session.updatedAt || session.startedAt || "";
+    const current = byStudent.get(key);
+    const shouldReplace = !current
+      || score > current.score
+      || (score === current.score && new Date(updatedAt) > new Date(current.updatedAt));
+
+    if (shouldReplace) {
+      byStudent.set(key, {
+        name: session.studentName,
+        score,
+        correctCount,
+        gameNumber: currentGameNumber,
+        updatedAt,
+      });
+    }
+  });
+
+  return Array.from(byStudent.values())
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.correctCount !== a.correctCount) return b.correctCount - a.correctCount;
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    });
+}
+
+function renderLeaderboards() {
+  const rows = buildLeaderboardRows();
+  if (leaderboardBodyEl) {
+    leaderboardBodyEl.innerHTML = rows.length
+      ? rows.map((row, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(row.name)}</td>
+          <td>${escapeHtml(row.score)}</td>
+          <td>${escapeHtml(row.gameNumber)}</td>
+        </tr>
+      `).join("")
+      : "<tr><td colspan=\"4\">Aún no hay puntajes guardados.</td></tr>";
+  }
+}
+
+async function openLeaderboard() {
+  if (!leaderboardModalEl) return;
+  await syncCloudSessions();
+  renderLeaderboards();
+  leaderboardModalEl.hidden = false;
+}
+
+function closeLeaderboard() {
+  if (!leaderboardModalEl) return;
+  leaderboardModalEl.hidden = true;
+}
+
 function getSessionEntries(session) {
   return PHASES.flatMap((phaseKey) => session.phases[phaseKey] || []);
+}
+
+function getSessionEvents(session) {
+  return Array.isArray(session.events) ? session.events : [];
 }
 
 function openTeacherLogin() {
@@ -775,8 +1111,9 @@ function handleTeacherLogin(event) {
   openTeacherDashboard();
 }
 
-function openTeacherDashboard() {
+async function openTeacherDashboard() {
   if (!teacherDashboardEl) return;
+  await syncCloudSessions();
   renderTeacherDashboard();
   teacherDashboardEl.hidden = false;
 }
@@ -788,6 +1125,7 @@ function closeTeacherDashboard() {
 
 function renderTeacherDashboard() {
   if (!teacherRecordsEl || !teacherSummaryEl) return;
+  renderLeaderboards();
   const sessions = Object.values(loadStoredSessions())
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
@@ -798,17 +1136,20 @@ function renderTeacherDashboard() {
   }
 
   const allEntries = sessions.flatMap(getSessionEntries);
+  const allEvents = sessions.flatMap(getSessionEvents);
   const totalCorrect = allEntries.filter((entry) => entry.isCorrect).length;
   const studentCount = new Set(sessions.map((session) => session.studentName.toLowerCase())).size;
   const totalStars = sessions.reduce((sum, session) => sum + (Number(session.starCount) || 0), 0);
-  teacherSummaryEl.textContent = `${studentCount} estudiante(s), ${sessions.length} sesión(es), ${allEntries.length} respuesta(s), ${totalCorrect} correcta(s), ${allEntries.length - totalCorrect} incorrecta(s), ${totalStars} estrella(s).`;
+  teacherSummaryEl.textContent = `${studentCount} estudiante(s), ${sessions.length} sesión(es), ${allEntries.length} respuesta(s), ${totalCorrect} correcta(s), ${allEntries.length - totalCorrect} incorrecta(s), ${allEvents.length} evento(s), ${totalStars} estrella(s).`;
 
   teacherRecordsEl.innerHTML = sessions.map(renderTeacherSession).join("");
 }
 
 function renderTeacherSession(session) {
   const entries = getSessionEntries(session);
+  const events = getSessionEvents(session);
   const correctCount = entries.filter((entry) => entry.isCorrect).length;
+  const eventBlock = renderTeacherEvents(session);
   const phaseBlocks = PHASES.map((phaseKey) => renderTeacherPhase(session, phaseKey)).join("");
 
   return `
@@ -819,14 +1160,54 @@ function renderTeacherSession(session) {
           <p>Inicio: ${formatDateTime(session.startedAt)} · Última actividad: ${formatDateTime(session.updatedAt)}</p>
         </div>
         <div class="teacherSessionStats">
+          <span>Partida ${Number(session.gameNumber) || 1}</span>
           <span>${entries.length} respuestas</span>
           <span>${correctCount} correctas</span>
           <span>${entries.length - correctCount} incorrectas</span>
+          <span>${events.length} eventos</span>
           <span>${Number(session.starCount) || 0} estrellas</span>
         </div>
       </header>
-      <div class="teacherPhaseGrid">${phaseBlocks}</div>
+      <div class="teacherPhaseGrid">${eventBlock}${phaseBlocks}</div>
     </article>
+  `;
+}
+
+function renderTeacherEvents(session) {
+  const events = getSessionEvents(session);
+  const rows = events.map((event, index) => `
+    <tr>
+      <td>${index + 1}</td>
+      <td>${formatDateTime(event.happenedAt)}</td>
+      <td>${escapeHtml(event.gameNumber || 1)}</td>
+      <td>${escapeHtml(phaseLabel(event.phase))}</td>
+      <td>${escapeHtml(event.description)}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <details class="teacherPhase" ${events.length ? "open" : ""}>
+      <summary>
+        <strong>Eventos de partida</strong>
+        <span>${events.length} evento(s)</span>
+      </summary>
+      ${events.length ? `
+        <div class="teacherTableWrap">
+          <table class="teacherTable teacherEventsTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Fecha</th>
+                <th>Partida</th>
+                <th>Fase</th>
+                <th>Evento</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      ` : "<p class=\"emptyTeacherState\">Aún no hay reinicios registrados.</p>"}
+    </details>
   `;
 }
 
@@ -837,12 +1218,13 @@ function renderTeacherPhase(session, phaseKey) {
     <tr>
       <td>${index + 1}</td>
       <td>${formatDateTime(entry.answeredAt)}</td>
+      <td>${escapeHtml(entry.gameNumber || 1)}</td>
       <td>${escapeHtml(operationLabel(entry.operation))}</td>
       <td>${escapeHtml(entry.problem)}</td>
       <td>${escapeHtml(entry.studentAnswer)}</td>
       <td>${escapeHtml(entry.correctAnswer)}</td>
       <td>${escapeHtml(entry.starsEarned || 0)}</td>
-      <td><span class="answerStatus ${entry.isCorrect ? "ok" : "bad"}">${entry.isCorrect ? "Correcta" : "Incorrecta"}</span></td>
+      <td><span class="answerStatus ${entry.isCorrect ? "ok" : "bad"}">${entry.isCorrect ? "Correcta" : "Incorrecta"}${entry.resetExcluded ? " (reiniciada)" : ""}</span></td>
     </tr>
   `).join("");
 
@@ -859,6 +1241,7 @@ function renderTeacherPhase(session, phaseKey) {
               <tr>
                 <th>#</th>
                 <th>Fecha</th>
+                <th>Partida</th>
                 <th>Operación</th>
                 <th>Problema</th>
                 <th>Respuesta</th>
@@ -875,7 +1258,8 @@ function renderTeacherPhase(session, phaseKey) {
   `;
 }
 
-function exportAllRecords() {
+async function exportAllRecords() {
+  await syncCloudSessions();
   const sessions = loadStoredSessions();
   const data = {
     exportedAt: new Date().toISOString(),
@@ -890,12 +1274,25 @@ function exportAllRecords() {
   URL.revokeObjectURL(url);
 }
 
+function splitStudentName(value) {
+  const parts = String(value || "").trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
 function openStudentModal(forceNewSession = false) {
   studentModalEl.classList.add("open");
+  const storedName = studentName || localStorage.getItem(STORAGE_KEYS.currentStudent) || "";
+  const parts = forceNewSession ? { firstName: "", lastName: "" } : splitStudentName(storedName);
   if (forceNewSession) {
     studentNameInputEl.value = "";
   } else {
-    studentNameInputEl.value = studentName || localStorage.getItem(STORAGE_KEYS.currentStudent) || "";
+    studentNameInputEl.value = parts.firstName;
+  }
+  if (studentLastNameInputEl) {
+    studentLastNameInputEl.value = parts.lastName;
   }
   setTimeout(() => studentNameInputEl.focus(), 0);
 }
@@ -917,7 +1314,7 @@ function beginStudentSession(name) {
   errorsPanel.style.display = "none";
   resetPhaseUI();
   updatePhaseButtons();
-  newGame();
+  startPhaseGame();
   showMainMenu("inicio");
 }
 
@@ -933,13 +1330,46 @@ function activateStoredSession(storedSession) {
   return true;
 }
 
-function handleStudentSubmit(event) {
+function logoutStudent() {
+  if (drawState.active) stopGraphicDraw();
+  saveCurrentGameState(false);
+  saveSessionLog();
+  studentName = "";
+  sessionLog = null;
+  phase = "concreta";
+  unlockedIndex = 0;
+  game.questions = [];
+  game.current = 0;
+  game.answer = 0;
+  game.locked = false;
+  localStorage.removeItem(STORAGE_KEYS.currentStudent);
+  localStorage.removeItem(STORAGE_KEYS.currentSession);
+  setStudentNameUI();
+  closeTeacherLogin();
+  closeTeacherDashboard();
+  closeStudentModal();
+  errorsPanel.style.display = "none";
+  errorsList.innerHTML = "";
+  resetPhaseUI();
+  updatePhaseButtons();
+  showMainMenu("inicio");
+  openStudentModal(true);
+}
+
+async function handleStudentSubmit(event) {
   event.preventDefault();
-  const name = studentNameInputEl.value.trim();
-  if (!name) {
+  const firstName = studentNameInputEl.value.trim();
+  const lastName = studentLastNameInputEl ? studentLastNameInputEl.value.trim() : "";
+  if (!firstName) {
     studentNameInputEl.focus();
     return;
   }
+  if (!lastName && studentLastNameInputEl) {
+    studentLastNameInputEl.focus();
+    return;
+  }
+  const name = `${firstName} ${lastName}`.replace(/\s+/g, " ").trim();
+  await syncCloudSessions();
   const existingSession = getSessionByStudent(name);
   if (existingSession) {
     activateStoredSession(existingSession);
@@ -947,8 +1377,8 @@ function handleStudentSubmit(event) {
     errorsPanel.style.display = "none";
     resetPhaseUI();
     updatePhaseButtons();
-    newGame();
-    showMainMenu("inicio");
+    restoreCurrentGame();
+    showSavedView();
     return;
   }
   beginStudentSession(name);
@@ -985,25 +1415,114 @@ function hydrateStudentSession() {
   return false;
 }
 
-function newGame() {
-  // NUEVO: reinicia errores y oculta panel
+function createQuestionsForPhase(phaseKey = phase) {
+  if (phaseKey === "simbolica") {
+    return generateBalancedQuestions(makeQuestion, OPS);
+  }
+  if (phaseKey === "grafica") {
+    return generateBalancedQuestions(makeQuestionGrafica, OPS_GRAFICA);
+  }
+  if (phaseKey === "concreta" || phaseKey === "complementaria") {
+    return generateBalancedQuestions(makeQuestionConcrete, OPS_CONCRETE);
+  }
+  return Array.from({ length: TOTAL_QUESTIONS }, makeQuestionConcrete);
+}
+
+function recalculateStarCount() {
+  if (!sessionLog) return;
+  const currentGameNumber = getCurrentGameNumber();
+  sessionLog.starCount = PHASES
+    .flatMap((phaseKey) => sessionLog.phases[phaseKey] || [])
+    .filter((entry) => entry.isCorrect && !entry.resetExcluded && (Number(entry.gameNumber) || 1) === currentGameNumber)
+    .reduce((sum, entry) => sum + (Number(entry.starsEarned) || POINTS_PER_CORRECT_ANSWER), 0);
+  updateStarCountUI();
+}
+
+function clearPhaseProgress(phaseKey) {
+  if (!sessionLog) return;
+  if (!sessionLog.phases) {
+    sessionLog.phases = createEmptyPhaseBuckets();
+  }
+  const currentGameNumber = getCurrentGameNumber();
+  const entries = sessionLog.phases[phaseKey] || [];
+  entries.forEach((entry) => {
+    if ((Number(entry.gameNumber) || 1) === currentGameNumber) {
+      entry.resetExcluded = true;
+    }
+  });
+  recalculateStarCount();
+}
+
+function startPhaseGame(options = {}) {
+  const { clearCurrentPhase = false, saveState = true } = options;
   errores = [];
   errorsPanel.style.display = "none";
   errorsList.innerHTML = "";
 
-  if (phase === "simbolica") {
-    game.questions = generateBalancedQuestions(makeQuestion, OPS);
-  } else if (phase === "grafica") {
-    game.questions = generateBalancedQuestions(makeQuestionGrafica, OPS_GRAFICA);
-  } else if (phase === "concreta" || phase === "complementaria") {
-    game.questions = generateBalancedQuestions(makeQuestionConcrete, OPS_CONCRETE);
-  } else {
-    game.questions = Array.from({ length: TOTAL_QUESTIONS }, makeQuestionConcrete);
+  if (clearCurrentPhase) {
+    clearPhaseProgress(phase);
   }
 
+  game.questions = createQuestionsForPhase(phase);
   game.current = 0;
+  game.answer = 0;
+  game.locked = false;
   updateProgressBar(0);
   loadQuestion();
+  if (saveState) {
+    saveCurrentGameState(false);
+    saveSessionLog();
+  }
+}
+
+function restoreCurrentGame() {
+  if (!sessionLog || !sessionLog.gameState || !Array.isArray(sessionLog.gameState.questions)) {
+    startPhaseGame();
+    return;
+  }
+  const savedState = sessionLog.gameState;
+  phase = PHASES.includes(savedState.phase) ? savedState.phase : "concreta";
+  game.questions = savedState.questions;
+  game.current = Math.max(0, Math.min(Number(savedState.current) || 0, game.questions.length));
+  game.answer = 0;
+  game.locked = false;
+  resetPhaseUI();
+  updatePhaseButtons();
+  if (savedState.completed || game.current >= game.questions.length) {
+    game.current = game.questions.length;
+    finishGame();
+    return;
+  }
+  loadQuestion();
+}
+
+function confirmNewGame() {
+  if (!sessionLog) return;
+  const ok = window.confirm("Nueva partida borrará el progreso visible del estudiante: estrellas, fases desbloqueadas y partida actual. El panel del profesor conservará el registro. ¿Deseas continuar?");
+  if (!ok) return;
+
+  phase = "concreta";
+  unlockedIndex = 0;
+  sessionLog.gameNumber = getCurrentGameNumber() + 1;
+  sessionLog.starCount = 0;
+  sessionLog.currentPhase = phase;
+  sessionLog.unlockedIndex = unlockedIndex;
+  sessionLog.gameState = null;
+  updateStarCountUI();
+  resetPhaseUI();
+  updatePhaseButtons();
+  addSessionEvent("new-game", "Nueva partida iniciada: se borró todo el progreso anterior.", phase);
+  startPhaseGame();
+  showGameView("juegos");
+}
+
+function confirmPhaseRestart() {
+  if (!sessionLog) return;
+  const ok = window.confirm(`Se reiniciará solo ${phaseLabel(phase)}. Las demás fases se conservarán y el panel del profesor mantendrá el registro. ¿Deseas continuar?`);
+  if (!ok) return;
+
+  addSessionEvent("phase-restart", `Reinicio de ${phaseLabel(phase)}: se reinició el progreso de esta fase.`, phase);
+  startPhaseGame({ clearCurrentPhase: true });
 }
 
 function shuffle(arr) {
@@ -1066,7 +1585,7 @@ function updateGraphicStatements(q) {
   const noun = shapePluralLabel(requiredShape);
   if (q.op.sym === "-") {
     drawStatementAEl.textContent = `Dibuja ${q.a} ${noun}.`;
-    drawStatementBEl.textContent = "Clickea en la figura para restar.";
+    drawStatementBEl.textContent = "Toca una figura para restar.";
     if (numericAnswerLabelEl) {
       numericAnswerLabelEl.textContent = `¿Cuántos ${noun} quedan?`;
     }
@@ -1209,7 +1728,9 @@ function updateGraphicPreview(clientX, clientY, lockProportion = false) {
 }
 
 function startGraphicDraw(zoneEl, e) {
-  if (e.button !== 0) return;
+  if (typeof e.button === "number" && e.button !== 0) return;
+  if (game.locked) return;
+  if (e.cancelable) e.preventDefault();
   const point = getZonePoint(zoneEl, e.clientX, e.clientY);
   const x = point.x;
   const y = point.y;
@@ -1246,16 +1767,27 @@ function initGraphicTools() {
   });
 
   [drawZoneAEl, drawZoneBEl].forEach((zone) => {
-    zone.addEventListener("mousedown", (e) => {
+    zone.addEventListener("pointerdown", (e) => {
       if (e.target !== zone) return;
       const q = game.questions[game.current];
       if (phase === "grafica" && q && q.op.sym === "-" && zone === drawZoneBEl) return;
+      if (typeof zone.setPointerCapture === "function") {
+        zone.setPointerCapture(e.pointerId);
+      }
       startGraphicDraw(zone, e);
     });
-  });
 
-  window.addEventListener("mousemove", (e) => updateGraphicPreview(e.clientX, e.clientY, e.shiftKey));
-  window.addEventListener("mouseup", stopGraphicDraw);
+    zone.addEventListener("pointermove", (e) => {
+      updateGraphicPreview(e.clientX, e.clientY, e.shiftKey);
+    });
+    zone.addEventListener("pointerup", (e) => {
+      if (typeof zone.hasPointerCapture === "function" && zone.hasPointerCapture(e.pointerId)) {
+        zone.releasePointerCapture(e.pointerId);
+      }
+      stopGraphicDraw();
+    });
+    zone.addEventListener("pointercancel", stopGraphicDraw);
+  });
 }
 
 function loadQuestion() {
@@ -1268,7 +1800,9 @@ function loadQuestion() {
   updateAnswerInputVisibility();
 
   qIndexEl.textContent = String(game.current + 1);
-  updateProgressBar(game.current + 1);
+  updateProgressBar(game.current);
+  saveCurrentGameState(false);
+  saveSessionLog();
 
   if (phase === "concreta") {
     loadQuestionConcrete(q);
@@ -1332,6 +1866,9 @@ function loadQuestionConcrete(q) {
 
   if (q.op.sym === "+") {
     tokensPanelEl.style.display = "";
+    if (tokensHintEl) {
+      tokensHintEl.textContent = "Arrastra o toca las fichas para responder.";
+    }
     answerPanelEl.style.display = "";
     dropzoneEl.style.display = "";
     concreteSubEl.style.display = "none";
@@ -1371,6 +1908,9 @@ function loadQuestionConcrete(q) {
     renderSubtractionGroup(q);
   } else {
     tokensPanelEl.style.display = "";
+    if (tokensHintEl) {
+      tokensHintEl.textContent = "Arrastra una ficha a cada grupo o toca un grupo para agregarla.";
+    }
     answerPanelEl.style.display = "";
     dropzoneEl.style.display = "none";
     concreteSubEl.style.display = "block";
@@ -1420,7 +1960,7 @@ function loadQuestionGrafica(q) {
     <span class="symbol">= ?</span>
   `;
   if (q.op.sym === "-") {
-    mathOpEl.textContent = "Dibuja la cantidad inicial, resta haciendo clic sobre las figuras y escribe el resultado.";
+    mathOpEl.textContent = "Dibuja la cantidad inicial, resta tocando las figuras y escribe el resultado.";
   } else if (q.op.sym === "×") {
     mathOpEl.textContent = "Dibuja dos grupos iguales y escribe el total.";
   } else if (q.op.sym === "÷") {
@@ -1576,7 +2116,7 @@ function renderObjectGroup(container, token, count, clickable, onClick) {
 function renderSubtractionGroup(q) {
   concreteSubEl.innerHTML = `
     <div class="obj-group" id="subGroup"></div>
-    <div class="concrete-hint">Tacha haciendo clic sobre las fichas.</div>
+    <div class="concrete-hint">Tacha tocando las fichas.</div>
   `;
   const subGroup = document.getElementById("subGroup");
   renderObjectGroup(subGroup, q.token, q.a, true, (item) => {
@@ -1605,8 +2145,21 @@ function renderGroupArea(q, opText) {
     const group = document.createElement("div");
     group.className = "group";
     group.dataset.groupIndex = String(i);
+    group.tabIndex = 0;
+    group.setAttribute("role", "button");
+    group.setAttribute("aria-label", `Grupo ${i + 1}. Toca para agregar una ficha.`);
     group.innerHTML = `<div class="group-title">Grupo ${i + 1}</div><div class="group-body"></div>`;
 
+    group.addEventListener("click", () => {
+      if (game.locked) return;
+      addTokenToGroup(group, q.token);
+    });
+    group.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      if (game.locked) return;
+      addTokenToGroup(group, q.token);
+    });
     group.addEventListener("dragover", (e) => {
       e.preventDefault();
       group.classList.add("dragover");
@@ -1673,6 +2226,9 @@ function createDraggableToken(token) {
   el.className = "token";
   el.draggable = true;
   el.dataset.tokenKey = token.key;
+  el.tabIndex = 0;
+  el.setAttribute("role", "button");
+  el.setAttribute("aria-label", `Agregar ${token.label}`);
 
   const img = document.createElement("img");
   img.src = token.img;
@@ -1681,10 +2237,32 @@ function createDraggableToken(token) {
   el.appendChild(img);
 
   el.addEventListener("dragstart", (e) => {
+    el.dataset.dragging = "true";
     e.dataTransfer.setData("text/tokenKey", token.key);
+  });
+  el.addEventListener("dragend", () => {
+    window.setTimeout(() => {
+      delete el.dataset.dragging;
+    }, 150);
+  });
+  el.addEventListener("click", () => {
+    if (el.dataset.dragging === "true") return;
+    handleTokenTap(token);
+  });
+  el.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    handleTokenTap(token);
   });
 
   return el;
+}
+
+function handleTokenTap(token) {
+  if (game.locked || phase !== "concreta") return;
+  const q = game.questions[game.current];
+  if (!q || token.key !== q.token.key || q.op.sym !== "+") return;
+  addTokenToAnswer(token);
 }
 
 function addTokenToAnswer(token) {
@@ -1825,6 +2403,17 @@ function checkAnswer() {
 
   feedbackEl.textContent = feedbackMessage;
   feedbackEl.className = "feedback " + (ok ? "ok" : "bad");
+  if (sessionLog) {
+    const nextQuestionIndex = game.current + 1;
+    updateProgressBar(nextQuestionIndex);
+    sessionLog.gameState = {
+      phase,
+      questions: game.questions,
+      current: nextQuestionIndex,
+      completed: nextQuestionIndex >= TOTAL_QUESTIONS,
+    };
+    saveSessionLog();
+  }
 
   // Pasar al siguiente tras 3 segundos para que se vea la retroalimentacion.
   setTimeout(() => {
@@ -1850,7 +2439,7 @@ function finishGame() {
   } else {
     optionsWrapEl.style.display = "none";
     visualOpEl.textContent = "¡Partida terminada!";
-    mathOpEl.textContent = "Pulsa \"Nueva partida\" para jugar otra vez.";
+    mathOpEl.textContent = "Puedes reiniciar esta fase o continuar con la siguiente fase desbloqueada.";
   }
   tokenPoolEl.innerHTML = "";
   clearDropzoneVisuals();
@@ -1858,6 +2447,8 @@ function finishGame() {
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
   unlockNextPhase();
+  saveCurrentGameState(true);
+  saveSessionLog();
 }
 
 function resetPhaseUI() {
@@ -1924,6 +2515,7 @@ function initPhaseBar() {
       const target = btn.dataset.phase;
       const idx = PHASES.indexOf(target);
       if (idx <= unlockedIndex) {
+        if (target === phase) return;
         setPhase(target);
       }
     });
@@ -1935,7 +2527,7 @@ function setPhase(nextPhase) {
   resetPhaseUI();
   updatePhaseButtons();
   saveSessionLog();
-  newGame();
+  startPhaseGame();
 }
 
 function unlockNextPhase() {
@@ -1979,13 +2571,16 @@ function updatePhaseButtons() {
   });
 }
 
-function initApp() {
+async function initApp() {
+  setupBrowserNavigation();
   initGraphicTools();
   initPhaseBar();
+  await syncCloudSessions();
+  renderLeaderboards();
   if (hydrateStudentSession()) {
     renderSessionLog();
-    newGame();
-    showMainMenu("inicio");
+    restoreCurrentGame();
+    showSavedView();
   } else {
     showMainMenu("inicio");
     openStudentModal();
