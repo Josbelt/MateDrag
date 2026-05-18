@@ -7,6 +7,7 @@ const DIVIDER_IMG = "img/dividir.png";
 const PHASES = ["concreta", "grafica", "simbolica", "complementaria"];
 const TEACHER_PASSWORD = "300901";
 const POINTS_PER_CORRECT_ANSWER = 100;
+const GRAPHIC_TAP_SHAPE_SIZE = 42;
 
 const TOKENS = [
   { key: "ball", img: "img/ball.png", label: "balón" },
@@ -111,12 +112,20 @@ const leaderboardBodyEl = document.getElementById("leaderboardBody");
 const openLeaderboardBtns = Array.from(document.querySelectorAll("[data-open-leaderboard]"));
 const leaderboardModalEl = document.getElementById("leaderboardModal");
 const closeLeaderboardBtnEl = document.getElementById("closeLeaderboardBtn");
+const finalCelebrationModalEl = document.getElementById("finalCelebrationModal");
+const finalScoreValueEl = document.getElementById("finalScoreValue");
+const finalRankValueEl = document.getElementById("finalRankValue");
+const finalRankTotalEl = document.getElementById("finalRankTotal");
+const finalRestartGameBtnEl = document.getElementById("finalRestartGameBtn");
+const finalHomeBtnEl = document.getElementById("finalHomeBtn");
 const logoutStudentBtns = Array.from(document.querySelectorAll("[data-logout-student]"));
 const menuScreenEl = document.getElementById("menuScreen");
 const gameScreenEl = document.getElementById("gameScreen");
 const backToMenuBtnEl = document.getElementById("backToMenuBtn");
 const resetPhaseBtnEl = document.getElementById("resetPhaseBtn");
 const newGameBtnEl = document.getElementById("newGameBtn");
+const gameMenuToggleBtnEl = document.getElementById("gameMenuToggleBtn");
+const gameQuickMenuEl = document.getElementById("gameQuickMenu");
 const playPhaseBtns = Array.from(document.querySelectorAll(".playPhaseBtn"));
 const menuPhaseCards = Array.from(document.querySelectorAll("[data-phase-card]"));
 const menuNavBtns = Array.from(document.querySelectorAll(".menuNavBtn"));
@@ -156,6 +165,29 @@ if (resetPhaseBtnEl) {
   resetPhaseBtnEl.addEventListener("click", confirmPhaseRestart);
 }
 backToMenuBtnEl.addEventListener("click", () => showMainMenu("inicio"));
+if (gameMenuToggleBtnEl && gameQuickMenuEl) {
+  gameMenuToggleBtnEl.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setGameMenuOpen(gameQuickMenuEl.hidden);
+  });
+
+  gameQuickMenuEl.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const clickedButton = event.target.closest("button");
+    if (clickedButton) {
+      window.setTimeout(closeGameMenu, 0);
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (gameQuickMenuEl.hidden || event.target.closest(".gameMenu")) return;
+    closeGameMenu();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeGameMenu();
+  });
+}
 logoutStudentBtns.forEach((btn) => {
   btn.addEventListener("click", logoutStudent);
 });
@@ -226,6 +258,19 @@ openLeaderboardBtns.forEach((btn) => {
 
 if (closeLeaderboardBtnEl) {
   closeLeaderboardBtnEl.addEventListener("click", closeLeaderboard);
+}
+
+if (finalRestartGameBtnEl) {
+  finalRestartGameBtnEl.addEventListener("click", () => {
+    startNewGame(false);
+  });
+}
+
+if (finalHomeBtnEl) {
+  finalHomeBtnEl.addEventListener("click", () => {
+    closeFinalCelebration();
+    showMainMenu("inicio");
+  });
 }
 
 window.addEventListener("beforeunload", () => {
@@ -709,8 +754,21 @@ function setupBrowserNavigation() {
   });
 }
 
+function setGameMenuOpen(isOpen) {
+  if (!gameMenuToggleBtnEl || !gameQuickMenuEl) return;
+  gameQuickMenuEl.hidden = !isOpen;
+  gameMenuToggleBtnEl.classList.toggle("active", isOpen);
+  gameMenuToggleBtnEl.setAttribute("aria-expanded", isOpen ? "true" : "false");
+}
+
+function closeGameMenu() {
+  setGameMenuOpen(false);
+}
+
 function showMainMenu(activeNav = "inicio") {
   if (drawState.active) stopGraphicDraw();
+  closeGameMenu();
+  closeFinalCelebration();
   menuScreenEl.hidden = false;
   gameScreenEl.hidden = true;
   setMainNavActive(activeNav);
@@ -723,6 +781,8 @@ function showMainMenu(activeNav = "inicio") {
 }
 
 function showGameView(activeNav = "juegos") {
+  closeGameMenu();
+  closeFinalCelebration();
   menuScreenEl.hidden = true;
   gameScreenEl.hidden = false;
   setMainNavActive(activeNav);
@@ -1069,6 +1129,38 @@ function closeLeaderboard() {
   leaderboardModalEl.hidden = true;
 }
 
+function getCurrentLeaderboardPosition() {
+  const rows = buildLeaderboardRows();
+  const key = String(studentName || "").toLowerCase();
+  const index = rows.findIndex((row) => row.name.toLowerCase() === key);
+  return {
+    rank: index >= 0 ? index + 1 : (rows.length ? rows.length : 1),
+    total: Math.max(1, rows.length),
+  };
+}
+
+function openFinalCelebration() {
+  if (!finalCelebrationModalEl) return;
+  renderLeaderboards();
+  const ranking = getCurrentLeaderboardPosition();
+  if (finalScoreValueEl) {
+    finalScoreValueEl.textContent = String(sessionLog ? Number(sessionLog.starCount) || 0 : 0);
+  }
+  if (finalRankValueEl) {
+    finalRankValueEl.textContent = String(ranking.rank);
+  }
+  if (finalRankTotalEl) {
+    finalRankTotalEl.textContent = String(ranking.total);
+  }
+  closeGameMenu();
+  finalCelebrationModalEl.hidden = false;
+}
+
+function closeFinalCelebration() {
+  if (!finalCelebrationModalEl) return;
+  finalCelebrationModalEl.hidden = true;
+}
+
 function getSessionEntries(session) {
   return PHASES.flatMap((phaseKey) => session.phases[phaseKey] || []);
 }
@@ -1153,11 +1245,12 @@ function renderTeacherSession(session) {
   const phaseBlocks = PHASES.map((phaseKey) => renderTeacherPhase(session, phaseKey)).join("");
 
   return `
-    <article class="teacherSession">
-      <header class="teacherSessionHeader">
+    <details class="teacherSession">
+      <summary class="teacherSessionHeader">
         <div>
           <h3>${escapeHtml(session.studentName)}</h3>
           <p>Inicio: ${formatDateTime(session.startedAt)} · Última actividad: ${formatDateTime(session.updatedAt)}</p>
+          <span class="teacherToggleLabel">respuestas del estudiante</span>
         </div>
         <div class="teacherSessionStats">
           <span>Partida ${Number(session.gameNumber) || 1}</span>
@@ -1167,9 +1260,11 @@ function renderTeacherSession(session) {
           <span>${events.length} eventos</span>
           <span>${Number(session.starCount) || 0} estrellas</span>
         </div>
-      </header>
-      <div class="teacherPhaseGrid">${eventBlock}${phaseBlocks}</div>
-    </article>
+      </summary>
+      <div class="teacherSessionBody">
+        <div class="teacherPhaseGrid">${eventBlock}${phaseBlocks}</div>
+      </div>
+    </details>
   `;
 }
 
@@ -1334,6 +1429,7 @@ function logoutStudent() {
   if (drawState.active) stopGraphicDraw();
   saveCurrentGameState(false);
   saveSessionLog();
+  closeFinalCelebration();
   studentName = "";
   sessionLog = null;
   phase = "concreta";
@@ -1496,11 +1592,14 @@ function restoreCurrentGame() {
   loadQuestion();
 }
 
-function confirmNewGame() {
+function startNewGame(askConfirmation = true) {
   if (!sessionLog) return;
-  const ok = window.confirm("Nueva partida borrará el progreso visible del estudiante: estrellas, fases desbloqueadas y partida actual. El panel del profesor conservará el registro. ¿Deseas continuar?");
-  if (!ok) return;
+  if (askConfirmation) {
+    const ok = window.confirm("Nueva partida borrará el progreso visible del estudiante: estrellas, fases desbloqueadas y partida actual. El panel del profesor conservará el registro. ¿Deseas continuar?");
+    if (!ok) return;
+  }
 
+  closeFinalCelebration();
   phase = "concreta";
   unlockedIndex = 0;
   sessionLog.gameNumber = getCurrentGameNumber() + 1;
@@ -1514,6 +1613,10 @@ function confirmNewGame() {
   addSessionEvent("new-game", "Nueva partida iniciada: se borró todo el progreso anterior.", phase);
   startPhaseGame();
   showGameView("juegos");
+}
+
+function confirmNewGame() {
+  startNewGame(true);
 }
 
 function confirmPhaseRestart() {
@@ -1655,13 +1758,24 @@ function stopGraphicDraw() {
   const height = Number.parseFloat(drawState.preview.style.height || "0");
 
   if (width < 8 || height < 8) {
-    drawState.preview.remove();
+    const zoneWidth = drawState.zone.clientWidth || GRAPHIC_TAP_SHAPE_SIZE;
+    const zoneHeight = drawState.zone.clientHeight || GRAPHIC_TAP_SHAPE_SIZE;
+    const size = Math.min(GRAPHIC_TAP_SHAPE_SIZE, zoneWidth, zoneHeight);
+    const left = Math.max(0, Math.min(drawState.startX - size / 2, zoneWidth - size));
+    const top = Math.max(0, Math.min(drawState.startY - size / 2, zoneHeight - size));
+
+    drawState.preview.style.left = `${left}px`;
+    drawState.preview.style.top = `${top}px`;
+    drawState.preview.style.width = `${size}px`;
+    drawState.preview.style.height = `${size}px`;
+    drawState.preview.classList.remove("preview");
   } else {
     drawState.preview.classList.remove("preview");
-    const q = game.questions[game.current];
-    if (phase === "grafica" && q && q.op.sym === "-" && drawState.zone === drawZoneAEl) {
-      drawState.preview.addEventListener("click", handleGraphicSubtractionClick);
-    }
+  }
+
+  const q = game.questions[game.current];
+  if (phase === "grafica" && q && q.op.sym === "-" && drawState.zone === drawZoneAEl) {
+    drawState.preview.addEventListener("click", handleGraphicSubtractionClick);
   }
 
   drawState.active = false;
@@ -2446,9 +2560,13 @@ function finishGame() {
   answerCountEl.textContent = "0";
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
+  const completedAllPhases = phase === PHASES[PHASES.length - 1];
   unlockNextPhase();
   saveCurrentGameState(true);
   saveSessionLog();
+  if (completedAllPhases) {
+    openFinalCelebration();
+  }
 }
 
 function resetPhaseUI() {
@@ -2515,8 +2633,12 @@ function initPhaseBar() {
       const target = btn.dataset.phase;
       const idx = PHASES.indexOf(target);
       if (idx <= unlockedIndex) {
-        if (target === phase) return;
+        if (target === phase) {
+          closeGameMenu();
+          return;
+        }
         setPhase(target);
+        closeGameMenu();
       }
     });
   });

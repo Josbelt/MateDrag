@@ -172,9 +172,11 @@ body{
 
 .brandLogo{
   display:block;
-  width:100%;
+  width:auto;
   max-width:286px;
+  max-height:104px;
   height:auto;
+  object-fit:contain;
 }
 
 .menuNav{
@@ -327,6 +329,8 @@ body{
   cursor:pointer;
   box-shadow:0 8px 0 rgba(8,35,92,.35), 0 14px 24px rgba(0,0,0,.2);
   transition:transform .16s ease, box-shadow .16s ease;
+}
+
 .leaderboardMiniBtn{
   height:76px;
   background:
@@ -420,7 +424,7 @@ body{
 .soundButton{
   position:absolute;
   right:26px;
-  top:148px;
+  top:218px;
   z-index:5;
   width:68px;
   height:68px;
@@ -430,6 +434,16 @@ body{
   box-shadow:0 8px 0 #b16b08, 0 14px 22px rgba(0,0,0,.22);
   font-size:30px;
   cursor:pointer;
+}
+
+.teacherActionsStack .soundButton{
+  position:static;
+  width:76px;
+  height:76px;
+  margin:0;
+  border-radius:18px;
+  border:4px solid rgba(255,255,255,.85);
+  font-size:30px;
 }
 
 .sceneLayer{
@@ -1297,6 +1311,101 @@ body{
   font-weight:900;
 }
 
+.finalCelebrationModal{
+  position:fixed;
+  inset:0;
+  z-index:70;
+  display:grid;
+  place-items:center;
+  padding:18px;
+  background:rgba(8,22,54,.78);
+}
+
+.finalCelebrationPanel{
+  width:min(560px, calc(100vw - 36px));
+  padding:28px;
+  border-radius:26px;
+  background:linear-gradient(180deg, #ffffff, #edf7ff);
+  border:3px solid #c9e9ff;
+  box-shadow:0 28px 60px rgba(0,0,0,.32);
+  text-align:center;
+}
+
+.finalCelebrationKicker{
+  width:max-content;
+  max-width:100%;
+  margin:0 auto 10px;
+  padding:7px 13px;
+  border-radius:999px;
+  background:#e9f4ff;
+  color:#315aa5;
+  font-size:13px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+
+.finalCelebrationPanel h2{
+  margin:0;
+  color:#13213e;
+  font-family:var(--font-title);
+  font-size:clamp(36px, 6vw, 56px);
+  line-height:.95;
+}
+
+.finalCelebrationCopy{
+  margin:10px auto 20px;
+  color:#4b5d76;
+  font-size:18px;
+  font-weight:800;
+}
+
+.finalStatsGrid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:12px;
+  margin:0 0 22px;
+}
+
+.finalStat{
+  min-height:112px;
+  display:grid;
+  place-items:center;
+  gap:4px;
+  padding:16px;
+  border-radius:18px;
+  background:#f8fbff;
+  border:2px solid #d8e8f7;
+}
+
+.finalStat span{
+  color:#4e5d72;
+  font-size:14px;
+  font-weight:900;
+}
+
+.finalStat strong{
+  color:#13213e;
+  font-family:var(--font-title);
+  font-size:36px;
+  line-height:1;
+}
+
+.finalStat small{
+  color:#66758b;
+  font-weight:900;
+}
+
+.finalActions{
+  display:grid;
+  grid-template-columns:1.35fr 1fr 1fr;
+  gap:10px;
+}
+
+.finalActions .btn{
+  width:100%;
+  min-height:52px;
+}
+
 .gameScreen{
   position:relative;
   max-width:min(1536px, 100%);
@@ -1389,7 +1498,10 @@ body{
   }
 
   .soundButton{
-    top:176px;
+    position:static;
+    margin:12px 0 0 auto;
+    display:grid;
+    place-items:center;
     width:56px;
     height:56px;
     font-size:24px;
@@ -1443,10 +1555,7 @@ body{
   }
 
   .soundButton{
-    position:static;
-    margin:12px 0 0 auto;
-    display:grid;
-    place-items:center;
+    margin-right:auto;
   }
 
   .menuHero{
@@ -1688,6 +1797,7 @@ h1{
   min-width:150px;
   flex:1 1 150px;
   cursor:pointer;
+  touch-action:manipulation;
 }
 
 .group.dragover{
@@ -1794,6 +1904,7 @@ h1{
   padding:8px 12px;
   cursor:pointer;
   font-size:14px;
+  touch-action:manipulation;
 }
 
 .shapeBtn.active{
@@ -1841,6 +1952,7 @@ h1{
   border:2px solid #274164;
   background:#62b6e355;
   pointer-events:auto;
+  touch-action:manipulation;
 }
 
 .draw-shape.preview{
@@ -1938,6 +2050,7 @@ h1{
   box-shadow: 0 10px 18px #00000018;
   cursor:grab;
   transition:.15s;
+  touch-action:manipulation;
 }
 
 .token:hover{
@@ -1990,6 +2103,7 @@ h1{
   font-weight:700;
   background:#fffef9;
   box-shadow:0 5px 10px #0000001a;
+  touch-action:manipulation;
 }
 
 .btn.primary{
@@ -2165,11 +2279,11 @@ h1{
 }
 
 .teacherSession{
-  padding:16px;
   border-radius:20px;
   background:#fff;
   border:2px solid #dbe9f6;
   box-shadow:0 12px 24px rgba(34,72,116,.08);
+  overflow:hidden;
 }
 
 .teacherSessionHeader{
@@ -2177,7 +2291,33 @@ h1{
   align-items:flex-start;
   justify-content:space-between;
   gap:14px;
-  margin-bottom:12px;
+  padding:16px;
+  cursor:pointer;
+  list-style:none;
+}
+
+.teacherSessionHeader::-webkit-details-marker{
+  display:none;
+}
+
+.teacherSessionHeader::after{
+  content:"";
+  flex:0 0 auto;
+  width:12px;
+  height:12px;
+  margin-top:7px;
+  border-right:3px solid #315aa5;
+  border-bottom:3px solid #315aa5;
+  transform:rotate(45deg);
+  transition:transform .18s ease;
+}
+
+.teacherSession[open] .teacherSessionHeader::after{
+  transform:rotate(-135deg);
+}
+
+.teacherSessionHeader:hover{
+  background:#f4faff;
 }
 
 .teacherSessionHeader h3{
@@ -2191,6 +2331,26 @@ h1{
   color:var(--muted);
   font-size:14px;
   font-weight:800;
+}
+
+.teacherToggleLabel{
+  display:inline-flex;
+  margin-top:8px;
+  color:#315aa5;
+  font-size:13px;
+  font-weight:900;
+}
+
+.teacherToggleLabel::before{
+  content:"Ver ";
+}
+
+.teacherSession[open] .teacherToggleLabel{
+  color:#4e5d72;
+}
+
+.teacherSession[open] .teacherToggleLabel::before{
+  content:"Ocultar ";
 }
 
 .teacherSessionStats{
@@ -2210,9 +2370,15 @@ h1{
   border:1px solid #cbe6ff;
 }
 
+.teacherSessionBody{
+  padding:0 16px 16px;
+  border-top:1px solid #e1edf8;
+}
+
 .teacherPhaseGrid{
   display:grid;
   gap:10px;
+  padding-top:12px;
 }
 
 .teacherPhase{
@@ -2388,6 +2554,7 @@ h1{
   padding:12px 10px;
   cursor:pointer;
   box-shadow:0 8px 16px #00000012;
+  touch-action:manipulation;
 }
 
 .optionBtn:hover{
@@ -2444,6 +2611,7 @@ h1{
   font-weight:700;
   background:#f8fdff;
   box-shadow:0 3px 8px #00000010;
+  touch-action:manipulation;
 }
 
 .phaseBtn.active{
@@ -2545,7 +2713,7 @@ h1{
 
 .gameScreen .topbar.gamebar{
   display:grid;
-  grid-template-columns:minmax(260px, auto) minmax(0, 1fr);
+  grid-template-columns:max-content minmax(0, 1fr);
   align-items:center;
   gap:18px;
   width:100%;
@@ -2559,16 +2727,19 @@ h1{
 }
 
 .gameScreen .topbar h1{
+  margin:0;
   font-size:clamp(38px, 3vw, 52px);
   line-height:1;
   color:#fff;
+  white-space:nowrap;
   text-shadow:0 3px 0 rgba(20,61,131,.16), 0 5px 10px rgba(0,0,0,.16);
 }
 
 .gameScreen .hud{
   min-width:0;
   display:grid;
-  grid-template-columns:minmax(520px, 1fr) auto;
+  grid-template-columns:minmax(0, 1fr) auto;
+  grid-auto-rows:auto;
   align-items:center;
   gap:14px;
 }
@@ -2582,12 +2753,13 @@ h1{
 }
 
 .gameScreen .hudStatus{
-  justify-content:flex-end;
+  justify-content:flex-start;
+  flex-wrap:nowrap;
 }
 
 .gameScreen .hudActions{
   justify-content:flex-end;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
   padding:8px;
   border-radius:22px;
   background:rgba(22,66,144,.18);
@@ -2652,7 +2824,7 @@ h1{
   align-items:center;
   justify-content:center;
   gap:8px;
-  padding:11px 18px;
+  padding:11px 14px;
   border:2px solid var(--btn-border);
   border-radius:18px;
   background:
@@ -2960,11 +3132,18 @@ h1{
 
   .gameScreen .hud{
     grid-template-columns:1fr;
+    grid-auto-rows:auto;
   }
 
   .gameScreen .hudStatus,
   .gameScreen .hudActions{
+    grid-column:1 / -1;
+    width:100%;
     justify-content:flex-start;
+  }
+
+  .gameScreen .hudActions{
+    margin-top:4px;
   }
 
   .gameScreen > .card{
@@ -3056,12 +3235,16 @@ h1{
 
   .menuAccountArea{
     width:100%;
+    display:grid;
+    grid-template-columns:minmax(0, 1fr);
     gap:10px;
     align-items:stretch;
   }
 
   .playerPanel{
-    flex:1 1 220px;
+    width:auto;
+    max-width:none;
+    flex:initial;
     min-width:0;
     padding:10px 12px;
     border-radius:18px;
@@ -3100,9 +3283,32 @@ h1{
     border-radius:15px;
   }
 
+  .teacherActionsStack{
+    grid-template-columns:repeat(2, 66px);
+    justify-content:center;
+    align-items:center;
+  }
+
   .leaderboardMiniBtn img{
     width:48px;
     height:48px;
+  }
+
+  .phaseCards{
+    grid-template-columns:minmax(0, min(100%, 300px));
+    justify-content:center;
+    gap:14px;
+  }
+
+  .phaseImageCard{
+    width:100%;
+    max-width:300px;
+    min-width:0;
+    justify-self:center;
+  }
+
+  .phaseCardImage{
+    max-width:100%;
   }
 
   .leaderboardTable{
@@ -3134,8 +3340,13 @@ h1{
   .gameScreen .hudActions{
     width:100%;
     display:grid;
-    grid-template-columns:repeat(2, minmax(0, 1fr));
+    grid-template-columns:1fr;
     gap:9px;
+  }
+
+  .gameScreen .hudStatus > *,
+  .gameScreen .hudActions > *{
+    min-width:0;
   }
 
   .gameScreen #studentBadge,
@@ -3169,12 +3380,17 @@ h1{
   }
 
   .gameScreen .hudActions .hudActionBtn{
+    min-width:0;
     min-height:50px;
-    padding:9px 12px;
+    gap:6px;
+    padding:9px 8px;
     border-radius:15px;
+    overflow-wrap:anywhere;
+    touch-action:manipulation;
   }
 
   .gameScreen .hudActions .hudActionBtn::before{
+    flex:0 0 24px;
     width:24px;
     height:24px;
     border-radius:9px;
@@ -3269,5 +3485,723 @@ h1{
   .gameScreen .phaseBtn{
     min-height:46px;
     padding:9px 12px;
+  }
+}
+
+@media (max-width: 520px){
+  .gameScreen .topbar.gamebar{
+    width:min(100%, 360px);
+    margin-left:0;
+    margin-right:auto;
+  }
+}
+
+/* ===== Jerarquia compacta durante el juego ===== */
+.gameScreen .topbar.gamebar{
+  grid-template-columns:1fr;
+  align-items:stretch;
+  gap:14px;
+  min-height:auto;
+  margin-bottom:12px;
+  padding:20px 28px 22px;
+  overflow:visible;
+}
+
+.gameScreen .gamebarMain{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.gameScreen .topbar h1{
+  font-size:clamp(34px, 3vw, 50px);
+}
+
+.gameScreen .hud{
+  width:100%;
+  display:block;
+}
+
+.gameScreen .hudStatus{
+  width:100%;
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(220px, 1.25fr) minmax(76px, auto) minmax(190px, .9fr) minmax(104px, auto);
+  align-items:center;
+  gap:0;
+  padding:12px 16px;
+  border-radius:20px;
+  background:rgba(246,250,255,.16);
+  border:1px solid rgba(221,236,255,.34);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.gameScreen .statusItem{
+  min-width:0;
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 16px;
+  color:#f8fbff;
+}
+
+.gameScreen .statusItem + .statusItem{
+  border-left:1px solid rgba(232,242,255,.28);
+}
+
+.gameScreen .statusLabel{
+  color:rgba(242,247,255,.82);
+  font-size:12px;
+  font-weight:900;
+  line-height:1;
+  text-transform:uppercase;
+}
+
+.gameScreen .statusItem strong{
+  min-width:0;
+  color:#fff;
+  font-family:var(--font-title);
+  font-size:20px;
+  font-weight:900;
+  line-height:1;
+  text-shadow:0 2px 0 rgba(23,65,132,.2);
+}
+
+.gameScreen .studentStatus{
+  padding-left:2px;
+  display:grid;
+  grid-template-columns:auto minmax(0, 1fr);
+  align-items:center;
+}
+
+.gameScreen #studentNameDisplay{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.gameScreen .starPill{
+  justify-content:center;
+}
+
+.gameScreen .statusIcon{
+  font-size:20px;
+  line-height:1;
+  filter:drop-shadow(0 2px 0 rgba(45,78,135,.18));
+}
+
+.gameScreen .progressStatus{
+  display:grid;
+  grid-template-columns:auto minmax(120px, 1fr);
+}
+
+.gameScreen .progressTrack{
+  width:100%;
+  min-width:120px;
+  max-width:none;
+  height:10px;
+  border-radius:999px;
+  background:rgba(220,232,249,.62);
+  border:1px solid rgba(182,208,241,.46);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.13);
+}
+
+.gameScreen .problemPill{
+  justify-content:flex-end;
+  padding-right:2px;
+}
+
+.gameScreen .gameMenu{
+  position:relative;
+  z-index:80;
+  flex:0 0 auto;
+}
+
+.gameScreen .gameMenuToggle{
+  width:58px;
+  height:58px;
+  display:grid;
+  place-items:center;
+  gap:5px;
+  padding:13px;
+  border-radius:18px;
+  border:2px solid rgba(198,224,255,.9);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,0) 44%),
+    linear-gradient(180deg, #ffffff, #eaf4ff);
+  box-shadow:0 5px 0 #9dbce7, 0 12px 18px rgba(24,46,82,.16);
+  cursor:pointer;
+  transition:transform .14s ease, filter .14s ease, box-shadow .14s ease;
+}
+
+.gameScreen .gameMenuToggle span{
+  width:28px;
+  height:4px;
+  display:block;
+  border-radius:999px;
+  background:#1d3151;
+}
+
+.gameScreen .gameMenuToggle:hover,
+.gameScreen .gameMenuToggle.active{
+  filter:brightness(1.04);
+}
+
+.gameScreen .gameMenuToggle:active{
+  transform:translateY(3px);
+  box-shadow:0 2px 0 #9dbce7, 0 8px 14px rgba(24,46,82,.14);
+}
+
+.gameScreen .gameMenuPanel{
+  position:absolute;
+  top:calc(100% + 10px);
+  right:0;
+  z-index:90;
+  width:min(320px, calc(100vw - 34px));
+  max-height:calc(100vh - 108px);
+  overflow:auto;
+  display:grid;
+  grid-template-columns:1fr;
+  align-items:stretch;
+  justify-content:normal;
+  gap:12px;
+  padding:14px;
+  border-radius:22px;
+  background:rgba(246,250,255,.98);
+  border:2px solid rgba(188,216,255,.95);
+  box-shadow:0 24px 46px rgba(13,48,104,.26), inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+.gameScreen .gameMenuPanel[hidden]{
+  display:none !important;
+}
+
+.gameScreen .gameMenuPanel .hudActionBtn{
+  width:100%;
+  justify-content:flex-start;
+}
+
+.gameScreen .phasebar-wrap.game-tabs{
+  width:min(940px, calc(100% - 48px));
+  min-height:auto;
+  margin:0 auto 18px;
+  padding:7px;
+  border-radius:18px;
+  background:rgba(236,247,255,.9);
+  border:2px solid rgba(188,224,247,.78);
+  box-shadow:0 12px 24px rgba(27,85,142,.1);
+}
+
+.gameScreen .phasebar{
+  width:100%;
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:7px;
+}
+
+.gameScreen .phaseBtn{
+  width:100%;
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:8px 10px;
+  border-radius:12px;
+  font-size:14px;
+  line-height:1.05;
+  white-space:normal;
+}
+
+.gameScreen .phaseBtn.active{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 3px 0 #4d55c8;
+}
+
+@media (max-width: 900px){
+  .gameScreen .hudStatus{
+    grid-template-columns:minmax(0, 1fr) minmax(84px, auto);
+    gap:8px 0;
+  }
+
+  .gameScreen .studentStatus,
+  .gameScreen .progressStatus{
+    grid-column:1 / -1;
+  }
+
+  .gameScreen .starPill{
+    grid-column:1;
+    justify-content:flex-start;
+    padding-left:2px;
+    border-left:0;
+  }
+
+  .gameScreen .problemPill{
+    grid-column:2;
+  }
+
+  .gameScreen .progressStatus{
+    border-left:0;
+    padding-left:2px;
+  }
+
+  .gameScreen .phasebar{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px){
+  .gameScreen .topbar.gamebar{
+    width:100%;
+    padding:14px;
+    gap:11px;
+  }
+
+  .gameScreen .topbar h1{
+    font-size:32px;
+  }
+
+  .gameScreen .gamebarMain{
+    gap:10px;
+  }
+
+  .gameScreen .gameMenuToggle{
+    width:52px;
+    height:52px;
+    padding:12px;
+    border-radius:16px;
+  }
+
+  .gameScreen .gameMenuToggle span{
+    width:24px;
+    height:3px;
+  }
+
+  .gameScreen .hudStatus{
+    padding:10px 12px;
+    border-radius:17px;
+  }
+
+  .gameScreen .statusItem{
+    min-height:36px;
+    padding:0 10px;
+  }
+
+  .gameScreen .studentStatus,
+  .gameScreen .progressStatus,
+  .gameScreen .starPill{
+    padding-left:0;
+  }
+
+  .gameScreen .problemPill{
+    padding-right:0;
+  }
+
+  .gameScreen .statusItem strong{
+    font-size:18px;
+  }
+
+  .gameScreen .progressStatus{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+
+  .gameScreen .gameMenuPanel{
+    right:-2px;
+    width:min(300px, calc(100vw - 24px));
+    padding:12px;
+    border-radius:19px;
+  }
+
+  .gameScreen .phasebar-wrap.game-tabs{
+    width:calc(100% - 20px);
+    margin-bottom:14px;
+  }
+}
+
+@media (max-width: 430px){
+  .gameScreen .hudStatus{
+    grid-template-columns:minmax(0, 1fr) auto;
+  }
+
+  .gameScreen .phasebar{
+    grid-template-columns:1fr;
+  }
+}
+
+/* ===== Orden movil del menu principal ===== */
+@media (max-width: 700px){
+  .mainMenu{
+    padding:12px 14px 28px;
+  }
+
+  .menuTopbar{
+    gap:12px;
+  }
+
+  .brandBadge{
+    min-height:84px;
+    justify-content:center;
+    padding:10px 16px;
+    border-radius:20px;
+  }
+
+  .brandLogo{
+    max-width:250px;
+  }
+
+  .menuAccountArea{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+
+  .playerPanel{
+    min-height:92px;
+    display:grid;
+    grid-template-columns:58px minmax(0, 1fr) auto;
+    align-items:center;
+    gap:12px;
+    padding:12px 14px;
+    border-radius:20px;
+  }
+
+  .playerInfo strong{
+    font-size:18px;
+    line-height:1;
+  }
+
+  .playerInfo > span{
+    max-width:100%;
+    margin-top:3px;
+    font-size:14px;
+  }
+
+  .playerPanel b{
+    margin-top:8px;
+    font-size:22px;
+  }
+
+  .playerLogoutBtn{
+    align-self:center;
+    min-height:48px;
+    padding:8px 14px;
+    border-radius:16px;
+  }
+
+  .teacherActionsStack{
+    grid-template-columns:repeat(2, 60px);
+    justify-content:center;
+    gap:14px;
+  }
+
+  .teacherAccessBtn,
+  .leaderboardMiniBtn{
+    width:60px;
+    height:60px;
+    border-radius:16px;
+    border-width:3px;
+  }
+
+  .leaderboardMiniBtn img{
+    width:44px;
+    height:44px;
+  }
+
+  .soundButton{
+    width:50px;
+    height:50px;
+    margin:12px auto 0;
+    font-size:23px;
+    border-width:3px;
+    box-shadow:0 6px 0 #b16b08, 0 10px 18px rgba(0,0,0,.18);
+  }
+
+  .menuHero{
+    width:100%;
+    margin-top:14px;
+  }
+
+  .menuTitle{
+    display:none;
+  }
+
+  .menuRibbon{
+    max-width:100%;
+    margin:0 auto 10px;
+    padding:10px 18px 12px;
+    border-radius:14px;
+    font-size:22px;
+    line-height:1.04;
+    box-shadow:0 7px 0 rgba(112,31,6,.5), 0 12px 18px rgba(0,0,0,.16);
+  }
+
+  .menuTagline{
+    margin:0 auto 18px;
+    padding:10px 16px;
+    border-radius:18px;
+    font-size:18px;
+  }
+
+  .phaseCards{
+    width:min(100%, 340px);
+    grid-template-columns:1fr;
+    gap:14px;
+    margin:0 auto;
+  }
+
+  .phaseImageCard{
+    width:100%;
+    max-width:none;
+  }
+}
+
+@media (max-width: 430px){
+  .mainMenu{
+    padding:10px 14px 26px;
+  }
+
+  .brandBadge{
+    min-height:78px;
+  }
+
+  .brandLogo{
+    max-width:225px;
+  }
+
+  .playerPanel{
+    grid-template-columns:54px minmax(0, 1fr) auto;
+    min-height:88px;
+    padding:10px 12px;
+  }
+
+  .avatarFace{
+    width:54px;
+    height:54px;
+  }
+
+  .playerInfo strong{
+    font-size:17px;
+  }
+
+  .playerLogoutBtn{
+    min-height:44px;
+    padding:8px 12px;
+  }
+
+  .menuRibbon{
+    font-size:20px;
+  }
+
+  .menuTagline{
+    font-size:17px;
+  }
+
+  .finalCelebrationPanel{
+    padding:22px 18px;
+    border-radius:22px;
+  }
+
+  .finalStatsGrid,
+  .finalActions{
+    grid-template-columns:1fr;
+  }
+
+  .finalStat{
+    min-height:92px;
+  }
+}
+
+/* ===== Mobile home: jerarquia de app, no landing larga ===== */
+@media (max-width: 700px){
+  .mainMenu{
+    padding:10px 12px 24px;
+  }
+
+  .menuTopbar{
+    display:grid;
+    grid-template-columns:minmax(0, 1fr) auto;
+    gap:8px 10px;
+    align-items:center;
+  }
+
+  .brandBadge{
+    grid-column:1;
+    grid-row:1;
+    min-height:56px;
+    justify-content:flex-start;
+    padding:6px 12px;
+    border-radius:16px;
+  }
+
+  .brandLogo{
+    max-width:190px;
+    max-height:48px;
+  }
+
+  .menuAccountArea{
+    display:contents;
+  }
+
+  .teacherActionsStack{
+    grid-column:2;
+    grid-row:1;
+    display:grid;
+    grid-template-columns:repeat(3, 46px);
+    justify-content:end;
+    gap:8px;
+  }
+
+  .teacherAccessBtn,
+  .leaderboardMiniBtn,
+  .teacherActionsStack .soundButton{
+    width:46px;
+    height:46px;
+    padding:5px;
+    border-width:2px;
+    border-radius:13px;
+    box-shadow:0 4px 0 rgba(8,35,92,.28), 0 8px 14px rgba(0,0,0,.16);
+  }
+
+  .leaderboardMiniBtn{
+    box-shadow:0 4px 0 #b37d18, 0 8px 14px rgba(0,0,0,.16);
+  }
+
+  .teacherActionsStack .soundButton{
+    font-size:20px;
+    box-shadow:0 4px 0 #b16b08, 0 8px 14px rgba(0,0,0,.16);
+  }
+
+  .leaderboardMiniBtn img{
+    width:34px;
+    height:34px;
+  }
+
+  .playerPanel{
+    grid-column:1 / -1;
+    grid-row:2;
+    min-height:68px;
+    display:grid;
+    grid-template-columns:46px minmax(0, 1fr) auto;
+    gap:10px;
+    padding:9px 11px;
+    border-radius:16px;
+  }
+
+  .avatarFace{
+    width:46px;
+    height:46px;
+    border-width:3px;
+    box-shadow:0 3px 0 #174a9f;
+  }
+
+  .avatarFace::before{
+    left:8px;
+    right:8px;
+    top:5px;
+    height:18px;
+  }
+
+  .avatarFace::after{
+    left:15px;
+    right:15px;
+    top:32px;
+    height:8px;
+    border-bottom-width:3px;
+  }
+
+  .avatarFace span::before,
+  .avatarFace span::after{
+    top:25px;
+    width:6px;
+    height:8px;
+  }
+
+  .avatarFace span::before{ left:16px; }
+  .avatarFace span::after{ right:16px; }
+
+  .playerInfo strong{
+    font-size:16px;
+  }
+
+  .playerInfo > span{
+    max-width:100%;
+    margin-top:2px;
+    font-size:13px;
+  }
+
+  .playerPanel b{
+    margin-top:4px;
+    font-size:19px;
+  }
+
+  .starCounter{
+    gap:6px;
+  }
+
+  .playerLogoutBtn{
+    min-height:40px;
+    padding:7px 11px;
+    border-radius:13px;
+    font-size:14px;
+    box-shadow:0 4px 0 #9d1b1b, 0 8px 14px rgba(0,0,0,.14);
+  }
+
+  .menuHero{
+    width:100%;
+    margin-top:12px;
+  }
+
+  .menuTitle,
+  .menuRibbon,
+  .menuTagline{
+    display:none;
+  }
+
+  .phaseCards{
+    width:min(100%, 430px);
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:12px;
+    margin:0 auto;
+  }
+
+  .phaseImageCard{
+    width:100%;
+    max-width:none;
+  }
+}
+
+@media (max-width: 430px){
+  .brandLogo{
+    max-width:168px;
+    max-height:44px;
+  }
+
+  .teacherActionsStack{
+    grid-template-columns:repeat(3, 42px);
+    gap:7px;
+  }
+
+  .teacherAccessBtn,
+  .leaderboardMiniBtn,
+  .teacherActionsStack .soundButton{
+    width:42px;
+    height:42px;
+  }
+
+  .leaderboardMiniBtn img{
+    width:30px;
+    height:30px;
+  }
+
+  .soundButton{
+    font-size:17px;
+  }
+
+  .phaseCards{
+    width:100%;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:10px;
   }
 }

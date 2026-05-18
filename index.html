@@ -18,7 +18,7 @@
     <section class="mainMenu" id="menuScreen" aria-label="Menú principal">
       <header class="menuTopbar">
         <div class="brandBadge" aria-label="Ruta Numérica">
-          <img class="brandLogo" src="img/logo-ruta-numerica.svg" alt="Ruta Numérica" />
+          <img class="brandLogo" src="img/logo-ruta-numerica.png" alt="Ruta Numérica" />
         </div>
 
         <div class="menuAccountArea">
@@ -34,6 +34,7 @@
             <button class="logoutStudentBtn playerLogoutBtn dangerBtn" data-logout-student type="button" hidden>Salir</button>
           </div>
           <div class="teacherActionsStack">
+            <button class="soundButton" type="button" aria-label="Sonido">🔊</button>
             <button class="teacherAccessBtn" id="openTeacherMenuBtn" type="button" aria-label="Panel del profesor" title="Profesor">
               <img src="img/profesor-icon.svg" alt="" aria-hidden="true" />
             </button>
@@ -43,8 +44,6 @@
           </div>
         </div>
       </header>
-
-      <button class="soundButton" type="button" aria-label="Sonido">🔊</button>
 
       <div class="sceneLayer" aria-hidden="true">
         <div class="cloud cloudOne"></div>
@@ -125,27 +124,43 @@
 
     <section class="gameScreen" id="gameScreen" hidden>
       <header class="topbar gamebar">
-        <h1>Ruta Numérica</h1>
-        <div class="hud">
-          <div class="hudStatus">
-            <div class="pill" id="studentBadge">
-              Estudiante: <span id="studentNameDisplay">Sin registrar</span>
-            </div>
-            <div class="pill starPill">
-              ⭐ <span id="starCountDisplay">0</span>
-            </div>
-            <div class="progressTrack" aria-hidden="true">
-              <span class="progressFill"></span>
-            </div>
-            <div class="pill">
-              Problema <span id="qIndex">1</span>/10
+        <div class="gamebarMain">
+          <h1>Ruta Numérica</h1>
+          <div class="gameMenu">
+            <button class="gameMenuToggle" id="gameMenuToggleBtn" type="button" aria-label="Abrir menu del juego" aria-expanded="false" aria-haspopup="true" aria-controls="gameQuickMenu">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            <div class="hudActions gameMenuPanel" id="gameQuickMenu" hidden>
+              <button class="btn hudActionBtn homeAction" id="backToMenuBtn" type="button">Inicio</button>
+              <button class="btn hudActionBtn resetAction" id="resetPhaseBtn" type="button">Reiniciar fase</button>
+              <button class="btn hudActionBtn newAction" id="newGameBtn" type="button">Nueva partida</button>
+              <button class="btn hudActionBtn dangerBtn exitAction" data-logout-student type="button" hidden>Salir</button>
             </div>
           </div>
-          <div class="hudActions">
-            <button class="btn hudActionBtn homeAction" id="backToMenuBtn" type="button">Inicio</button>
-            <button class="btn hudActionBtn resetAction" id="resetPhaseBtn" type="button">Reiniciar fase</button>
-            <button class="btn hudActionBtn newAction" id="newGameBtn" type="button">Nueva partida</button>
-            <button class="btn hudActionBtn dangerBtn exitAction" data-logout-student type="button" hidden>Salir</button>
+        </div>
+
+        <div class="hud">
+          <div class="hudStatus">
+            <div class="statusItem studentStatus" id="studentBadge">
+              <span class="statusLabel">Estudiante</span>
+              <strong id="studentNameDisplay">Sin registrar</strong>
+            </div>
+            <div class="statusItem starPill" aria-label="Estrellas">
+              <span class="statusIcon" aria-hidden="true">⭐</span>
+              <strong id="starCountDisplay">0</strong>
+            </div>
+            <div class="statusItem progressStatus">
+              <span class="statusLabel">Progreso</span>
+              <div class="progressTrack" aria-hidden="true">
+                <span class="progressFill"></span>
+              </div>
+            </div>
+            <div class="statusItem problemPill">
+              <span class="statusLabel">Problema</span>
+              <strong><span id="qIndex">1</span>/10</strong>
+            </div>
           </div>
         </div>
       </header>
@@ -282,6 +297,32 @@
         </div>
 
         <div class="teacherRecords" id="teacherRecords"></div>
+      </div>
+    </section>
+
+    <section class="finalCelebrationModal" id="finalCelebrationModal" aria-modal="true" role="dialog" hidden>
+      <div class="finalCelebrationPanel">
+        <p class="finalCelebrationKicker">Ruta completada</p>
+        <h2>¡Felicitaciones!</h2>
+        <p class="finalCelebrationCopy">Terminaste todas las fases de Ruta Numérica.</p>
+
+        <div class="finalStatsGrid">
+          <div class="finalStat">
+            <span>Puntaje</span>
+            <strong><span id="finalScoreValue">0</span></strong>
+          </div>
+          <div class="finalStat">
+            <span>Ranking</span>
+            <strong>#<span id="finalRankValue">1</span></strong>
+            <small>de <span id="finalRankTotal">1</span></small>
+          </div>
+        </div>
+
+        <div class="finalActions">
+          <button class="btn primary" id="finalRestartGameBtn" type="button">Reiniciar partida</button>
+          <button class="btn" id="finalHomeBtn" type="button">Inicio</button>
+          <button class="btn dangerBtn" id="finalExitBtn" data-logout-student type="button">Salir</button>
+        </div>
       </div>
     </section>
 
