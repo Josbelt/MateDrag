@@ -1,13 +1,10 @@
-// Configura Cloud Firestore para sincronizar datos entre equipos.
-// 1. Crea un proyecto en Firebase y activa Firestore Database + Cloud Firestore API.
-// 2. Copia aqui el ID del proyecto.
-// 3. Si tus reglas lo requieren, agrega tambien firebaseApiKey.
+// Configura Firebase Realtime Database para sincronizar datos entre equipos.
+// 1. Crea un proyecto en Firebase y activa Realtime Database.
+// 2. Copia aqui la URL de la base de datos.
+// 3. Asegurate de que las reglas permitan leer/escribir en rootPath.
 window.MATEDRAG_CLOUD = {
   enabled: true,
-  provider: "firestore",
-  firebaseProjectId: "ruta-numerica",
-  firestoreDatabaseId: "(default)",
-  firestoreCollection: "ruta-numerica-sessions",
-  firebaseApiKey: "",
+  provider: "realtime",
+  firebaseDatabaseURL: "https://ruta-numerica-default-rtdb.firebaseio.com",
   rootPath: "ruta-numerica",
 };
