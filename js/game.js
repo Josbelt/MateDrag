@@ -92,6 +92,9 @@ const optionsWrapEl = document.getElementById("optionsWrap");
 const clearBtnEl = document.getElementById("clearBtn");
 const checkBtnEl = document.getElementById("checkBtn");
 const answerBarEl = clearBtnEl.parentElement;
+const phaseCompleteActionsEl = document.getElementById("phaseCompleteActions");
+const nextPhaseBtnEl = document.getElementById("nextPhaseBtn");
+const phaseHomeBtnEl = document.getElementById("phaseHomeBtn");
 
 // NUEVO: DOM para mostrar errores
 const showErrorsBtn = document.getElementById("showErrorsBtn");
@@ -160,6 +163,12 @@ let suppressHistoryUpdate = false;
 
 clearBtnEl.addEventListener("click", clearAnswer);
 checkBtnEl.addEventListener("click", checkAnswer);
+if (nextPhaseBtnEl) {
+  nextPhaseBtnEl.addEventListener("click", goToNextPhase);
+}
+if (phaseHomeBtnEl) {
+  phaseHomeBtnEl.addEventListener("click", () => showMainMenu("inicio"));
+}
 newGameBtnEl.addEventListener("click", confirmNewGame);
 if (resetPhaseBtnEl) {
   resetPhaseBtnEl.addEventListener("click", confirmPhaseRestart);
@@ -1908,6 +1917,7 @@ function loadQuestion() {
   const q = game.questions[game.current];
   game.answer = 0;
   game.locked = false;
+  setPhaseCompleteActions(false);
   answerBarEl.style.display = "";
   answerSummaryWrapEl.style.display = "";
   updateAnswerLabel();
@@ -2540,11 +2550,38 @@ function checkAnswer() {
   }, FEEDBACK_DELAY_MS);
 }
 
+function getNextPhase() {
+  const idx = PHASES.indexOf(phase);
+  if (idx < 0 || idx >= PHASES.length - 1) return null;
+  return PHASES[idx + 1];
+}
+
+function setPhaseCompleteActions(isVisible) {
+  if (!phaseCompleteActionsEl) return;
+  const nextPhase = getNextPhase();
+  phaseCompleteActionsEl.hidden = !isVisible;
+  if (nextPhaseBtnEl) {
+    nextPhaseBtnEl.hidden = !nextPhase;
+    nextPhaseBtnEl.disabled = !nextPhase;
+  }
+}
+
+function goToNextPhase() {
+  const nextPhase = getNextPhase();
+  if (!nextPhase) return;
+  setPhase(nextPhase);
+}
+
 function finishGame() {
   stopGraphicDraw();
   updateProgressBar(TOTAL_QUESTIONS);
   graphicWorkspaceEl.style.display = "none";
   inputAnswerWrapEl.style.display = "none";
+  answerBarEl.style.display = "none";
+  answerSummaryWrapEl.style.display = "none";
+  clearBtnEl.style.display = "none";
+  checkBtnEl.style.display = "none";
+  dropzoneEl.style.display = "none";
   if (phase === "concreta") {
     optionsWrapEl.style.display = "none";
     visualConcreteEl.textContent = "¡Partida terminada!";
@@ -2562,6 +2599,7 @@ function finishGame() {
   feedbackEl.className = "feedback";
   const completedAllPhases = phase === PHASES[PHASES.length - 1];
   unlockNextPhase();
+  setPhaseCompleteActions(!completedAllPhases);
   saveCurrentGameState(true);
   saveSessionLog();
   if (completedAllPhases) {
@@ -2570,6 +2608,7 @@ function finishGame() {
 }
 
 function resetPhaseUI() {
+  setPhaseCompleteActions(false);
   if (phase === "concreta") {
     optionsWrapEl.style.display = "none";
     graphicWorkspaceEl.style.display = "none";

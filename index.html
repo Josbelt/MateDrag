@@ -221,6 +221,11 @@
               <button class="btn primary" id="checkBtn" type="button">Comprobar</button>
             </div>
 
+            <div class="phaseCompleteActions" id="phaseCompleteActions" hidden>
+              <button class="btn primary" id="nextPhaseBtn" type="button">Siguiente fase</button>
+              <button class="btn" id="phaseHomeBtn" type="button">Inicio</button>
+            </div>
+
             <div class="inputAnswerWrap" id="inputAnswerWrap" style="display:none;">
               <label for="numericAnswer">Escribe tu respuesta en números:</label>
               <input id="numericAnswer" type="number" min="0" step="1" inputmode="numeric" />
@@ -313,8 +318,8 @@
           </div>
           <div class="finalStat">
             <span>Ranking</span>
-            <strong>#<span id="finalRankValue">1</span></strong>
-            <small>de <span id="finalRankTotal">1</span></small>
+            <strong class="finalRankValue"><span aria-hidden="true">#</span><span id="finalRankValue">1</span></strong>
+            <small>de <span id="finalRankTotal">1</span> jugadores</small>
           </div>
         </div>
 
