@@ -9,6 +9,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ruta Numérica</title>
   <link rel="icon" type="image/svg+xml" href="img/favicon.svg" />
+  <link rel="preload" as="image" href="img/menu-background.png" fetchpriority="high" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -18,7 +19,7 @@
     <section class="mainMenu" id="menuScreen" aria-label="Menú principal">
       <header class="menuTopbar">
         <div class="brandBadge" aria-label="Ruta Numérica">
-          <img class="brandLogo" src="img/logo-ruta-numerica.png" alt="Ruta Numérica" />
+          <img class="brandLogo" src="img/logo-ruta-numerica.png" alt="Ruta Numérica" width="500" height="500" decoding="async" fetchpriority="high" />
         </div>
 
         <div class="menuAccountArea">
@@ -36,10 +37,10 @@
           <div class="teacherActionsStack">
             <button class="soundButton" type="button" aria-label="Sonido">🔊</button>
             <button class="teacherAccessBtn" id="openTeacherMenuBtn" type="button" aria-label="Panel del profesor" title="Profesor">
-              <img src="img/profesor-icon.svg" alt="" aria-hidden="true" />
+              <img src="img/profesor-icon.svg" alt="" aria-hidden="true" width="96" height="96" decoding="async" />
             </button>
             <button class="leaderboardMiniBtn" data-open-leaderboard type="button" aria-label="Tabla de clasificación" title="Tabla de clasificación">
-              <img src="img/leaderboard-icon.svg" alt="" aria-hidden="true" />
+              <img src="img/leaderboard-icon.svg" alt="" aria-hidden="true" width="512" height="512" decoding="async" />
             </button>
           </div>
         </div>
@@ -88,22 +89,22 @@
 
         <div class="phaseCards" aria-label="Fases disponibles">
           <article class="phaseCard phaseImageCard concreteCard" data-phase-card="concreta">
-            <img class="phaseCardImage" src="img/card-concreta.svg" alt="Concreta" />
+            <img class="phaseCardImage" src="img/card-concreta.svg" alt="Concreta" width="768" height="1024" decoding="async" />
             <button class="playPhaseBtn phaseImageButton" data-phase="concreta" type="button" aria-label="Jugar fase concreta"></button>
           </article>
 
           <article class="phaseCard phaseImageCard graphCard" data-phase-card="grafica">
-            <img class="phaseCardImage" src="img/card-grafica.svg" alt="Gráfica" />
+            <img class="phaseCardImage" src="img/card-grafica.svg" alt="Gráfica" width="768" height="1024" decoding="async" />
             <button class="playPhaseBtn phaseImageButton" data-phase="grafica" type="button" aria-label="Jugar fase gráfica"></button>
           </article>
 
           <article class="phaseCard phaseImageCard symbolCard" data-phase-card="simbolica">
-            <img class="phaseCardImage" src="img/card-simbolica.svg" alt="Simbólica" />
+            <img class="phaseCardImage" src="img/card-simbolica.svg" alt="Simbólica" width="768" height="1024" decoding="async" />
             <button class="playPhaseBtn phaseImageButton" data-phase="simbolica" type="button" aria-label="Jugar fase simbólica"></button>
           </article>
 
           <article class="phaseCard phaseImageCard appCard" data-phase-card="complementaria">
-            <img class="phaseCardImage" src="img/card-aplicacion.svg" alt="Aplicación" />
+            <img class="phaseCardImage" src="img/card-aplicacion.svg" alt="Aplicación" width="768" height="1024" decoding="async" />
             <button class="playPhaseBtn phaseImageButton" data-phase="complementaria" type="button" aria-label="Jugar fase aplicación"></button>
           </article>
         </div>
@@ -359,7 +360,7 @@
     </section>
   </main>
 
-  <script src="js/cloud-config.js"></script>
-  <script src="js/game.js"></script>
+  <script src="js/cloud-config.js" defer></script>
+  <script src="js/game.js" defer></script>
 </body>
 </html>

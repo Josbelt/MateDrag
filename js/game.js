@@ -151,15 +151,20 @@ const STORAGE_KEYS = {
   currentStudent: "matedrag.currentStudent",
   currentSession: "matedrag.currentSession",
   sessions: "matedrag.sessions",
+  pendingCloudWrites: "matedrag.pendingCloudWrites",
 };
 
 const CLOUD_CONFIG = window.MATEDRAG_CLOUD || {};
-const CLOUD_TIMEOUT_MS = 4500;
+const CLOUD_TIMEOUT_MS = 15000;
 
 let studentName = "";
 let sessionLog = null;
 let soundEnabled = true;
 let suppressHistoryUpdate = false;
+let cloudQueueFlushInProgress = false;
+let cloudQueueFlushTimer = 0;
+let storedSessionsCache = null;
+let leaderboardRenderQueued = false;
 
 clearBtnEl.addEventListener("click", clearAnswer);
 checkBtnEl.addEventListener("click", checkAnswer);
@@ -169,6 +174,22 @@ if (nextPhaseBtnEl) {
 if (phaseHomeBtnEl) {
   phaseHomeBtnEl.addEventListener("click", () => showMainMenu("inicio"));
 }
+window.addEventListener("online", () => {
+  flushCloudWriteQueue().then((ok) => {
+    if (ok) syncCloudSessions();
+  });
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    flushCloudWriteQueue();
+  }
+});
+window.addEventListener("storage", (event) => {
+  if (event.key === STORAGE_KEYS.sessions) {
+    storedSessionsCache = null;
+    scheduleLeaderboardRender();
+  }
+});
 newGameBtnEl.addEventListener("click", confirmNewGame);
 if (resetPhaseBtnEl) {
   resetPhaseBtnEl.addEventListener("click", confirmPhaseRestart);
@@ -587,25 +608,96 @@ function getUnlockedIndexFromSession(session) {
 }
 
 function loadStoredSessions() {
+  if (storedSessionsCache) return storedSessionsCache;
   const sessions = loadStoredJson(STORAGE_KEYS.sessions) || {};
   Object.keys(sessions).forEach((sessionId) => {
     sessions[sessionId] = normalizeSessionLog(sessions[sessionId]);
   });
-  return sessions;
+  storedSessionsCache = sessions;
+  return storedSessionsCache;
 }
 
 function saveStoredSessions(sessions) {
+  storedSessionsCache = sessions;
   localStorage.setItem(STORAGE_KEYS.sessions, JSON.stringify(sessions));
 }
 
-function isCloudConfigured() {
+function scheduleLeaderboardRender() {
+  if (leaderboardRenderQueued) return;
+  leaderboardRenderQueued = true;
+  const render = () => {
+    leaderboardRenderQueued = false;
+    renderLeaderboards();
+  };
+  if (typeof window.requestAnimationFrame === "function") {
+    window.requestAnimationFrame(render);
+  } else {
+    window.setTimeout(render, 0);
+  }
+}
+
+function loadPendingCloudWrites() {
+  return loadStoredJson(STORAGE_KEYS.pendingCloudWrites) || {};
+}
+
+function savePendingCloudWrites(queue) {
+  const entries = Object.entries(queue || {}).filter(([, write]) => write && write.path);
+  if (entries.length === 0) {
+    localStorage.removeItem(STORAGE_KEYS.pendingCloudWrites);
+    return;
+  }
+  localStorage.setItem(STORAGE_KEYS.pendingCloudWrites, JSON.stringify(Object.fromEntries(entries)));
+}
+
+function queueCloudWrite(path, options = {}, error = null) {
+  if (!isCloudConfigured()) return;
+  const method = String(options.method || "PUT").toUpperCase();
+  const key = `${method}:${path}`;
+  const queue = loadPendingCloudWrites();
+  const previous = queue[key] || {};
+  queue[key] = {
+    path,
+    method,
+    body: options.body || "",
+    queuedAt: previous.queuedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    attempts: Number(previous.attempts) || 0,
+    lastError: error ? (error.message || error.name || String(error)) : "",
+  };
+  savePendingCloudWrites(queue);
+}
+
+function scheduleCloudWriteFlush(delay = 350) {
+  if (!isCloudConfigured() || typeof fetch !== "function") return;
+  window.clearTimeout(cloudQueueFlushTimer);
+  cloudQueueFlushTimer = window.setTimeout(() => {
+    cloudQueueFlushTimer = 0;
+    flushCloudWriteQueue();
+  }, delay);
+}
+
+function cloudProvider() {
+  return String(CLOUD_CONFIG.provider || (CLOUD_CONFIG.firebaseProjectId ? "firestore" : "realtime"))
+    .trim()
+    .toLowerCase();
+}
+
+function isFirestoreProvider() {
+  return cloudProvider() === "firestore";
+}
+
+function inferProjectIdFromRealtimeUrl() {
   const url = String(CLOUD_CONFIG.firebaseDatabaseURL || "").trim();
-  return Boolean(
-    CLOUD_CONFIG.enabled
-    && url
-    && !url.includes("TU-PROYECTO")
-    && /^https:\/\/.+\.firebaseio\.com|^https:\/\/.+\.firebasedatabase\.app/.test(url)
-  );
+  const match = url.match(/^https:\/\/([a-z0-9-]+?)(?:-default-rtdb)?\.(?:firebaseio\.com|firebasedatabase\.app)/i);
+  return match ? match[1] : "";
+}
+
+function firestoreProjectId() {
+  return String(CLOUD_CONFIG.firebaseProjectId || CLOUD_CONFIG.projectId || inferProjectIdFromRealtimeUrl()).trim();
+}
+
+function firestoreDatabaseId() {
+  return String(CLOUD_CONFIG.firestoreDatabaseId || "(default)").trim() || "(default)";
 }
 
 function cloudRootPath() {
@@ -614,31 +706,276 @@ function cloudRootPath() {
     .replace(/[^a-zA-Z0-9_-]/g, "-");
 }
 
-function cloudUrl(path = "") {
+function firestoreCollectionName() {
+  return String(CLOUD_CONFIG.firestoreCollection || `${cloudRootPath()}-sessions`)
+    .replace(/^\/+|\/+$/g, "")
+    .replace(/[^a-zA-Z0-9_-]/g, "-");
+}
+
+function firebaseApiKey() {
+  return String(CLOUD_CONFIG.firebaseApiKey || CLOUD_CONFIG.apiKey || "").trim();
+}
+
+function firestoreBaseUrl() {
+  return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(firestoreProjectId())}/databases/${encodeURIComponent(firestoreDatabaseId())}/documents`;
+}
+
+function firestoreUrl(path = "", params = {}) {
+  const cleanPath = String(path || "").replace(/^\/+|\/+$/g, "");
+  const query = new URLSearchParams(params);
+  const key = firebaseApiKey();
+  if (key) {
+    query.set("key", key);
+  }
+  const queryString = query.toString();
+  return `${firestoreBaseUrl()}/${cleanPath}${queryString ? `?${queryString}` : ""}`;
+}
+
+function realtimeCloudUrl(path = "") {
   const base = String(CLOUD_CONFIG.firebaseDatabaseURL || "").replace(/\/+$/g, "");
   const cleanPath = [cloudRootPath(), path].filter(Boolean).join("/").replace(/^\/+|\/+$/g, "");
   return `${base}/${cleanPath}.json`;
 }
 
-async function cloudFetch(path, options = {}) {
-  if (!isCloudConfigured() || typeof fetch !== "function") return null;
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), CLOUD_TIMEOUT_MS);
+function isCloudConfigured() {
+  if (!CLOUD_CONFIG.enabled) return false;
+
+  if (isFirestoreProvider()) {
+    const projectId = firestoreProjectId();
+    return Boolean(projectId && !projectId.includes("TU-PROYECTO"));
+  }
+
+  const url = String(CLOUD_CONFIG.firebaseDatabaseURL || "").trim();
+  return Boolean(
+    url
+    && !url.includes("TU-PROYECTO")
+    && (/^https:\/\/.+\.firebaseio\.com/.test(url) || /^https:\/\/.+\.firebasedatabase\.app/.test(url))
+  );
+}
+
+function cloudBackendName() {
+  return isFirestoreProvider() ? "Firestore" : "Firebase";
+}
+
+function cloudTimeoutMessage() {
+  return `${cloudBackendName()} no respondió en ${Math.round(CLOUD_TIMEOUT_MS / 1000)} segundos. Se guarda localmente y se reintentará automáticamente.`;
+}
+
+function isCloudTimeoutError(error) {
+  return error && (error.name === "AbortError" || error.name === "TimeoutError" || error.name === "CloudTimeoutError");
+}
+
+function toFirestoreValue(value) {
+  if (value === null || typeof value === "undefined") return { nullValue: null };
+  if (Array.isArray(value)) {
+    return { arrayValue: { values: value.map(toFirestoreValue) } };
+  }
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  }
+  if (typeof value === "object") return { mapValue: { fields: toFirestoreFields(value) } };
+  return { stringValue: String(value) };
+}
+
+function toFirestoreFields(value) {
+  return Object.entries(value || {}).reduce((fields, [key, fieldValue]) => {
+    if (typeof fieldValue !== "undefined") {
+      fields[key] = toFirestoreValue(fieldValue);
+    }
+    return fields;
+  }, {});
+}
+
+function fromFirestoreValue(value = {}) {
+  if (Object.prototype.hasOwnProperty.call(value, "stringValue")) return value.stringValue;
+  if (Object.prototype.hasOwnProperty.call(value, "integerValue")) return Number(value.integerValue) || 0;
+  if (Object.prototype.hasOwnProperty.call(value, "doubleValue")) return Number(value.doubleValue) || 0;
+  if (Object.prototype.hasOwnProperty.call(value, "booleanValue")) return Boolean(value.booleanValue);
+  if (Object.prototype.hasOwnProperty.call(value, "nullValue")) return null;
+  if (Object.prototype.hasOwnProperty.call(value, "timestampValue")) return value.timestampValue;
+  if (value.arrayValue) {
+    return (value.arrayValue.values || []).map(fromFirestoreValue);
+  }
+  if (value.mapValue) {
+    return fromFirestoreFields(value.mapValue.fields || {});
+  }
+  return null;
+}
+
+function fromFirestoreFields(fields = {}) {
+  return Object.entries(fields).reduce((result, [key, value]) => {
+    result[key] = fromFirestoreValue(value);
+    return result;
+  }, {});
+}
+
+function firestoreDocumentId(document = {}) {
+  const rawId = String(document.name || "").split("/").pop() || "";
   try {
-    const response = await fetch(cloudUrl(path), {
-      ...options,
-      signal: controller.signal,
+    return decodeURIComponent(rawId);
+  } catch (error) {
+    return rawId;
+  }
+}
+
+function readCloudBody(options) {
+  if (typeof options.body !== "string") return options.body || {};
+  if (!options.body.trim()) return {};
+  return JSON.parse(options.body);
+}
+
+async function cloudResponseError(response, backendName) {
+  let detail = "";
+  try {
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
+    detail = data && data.error && data.error.message ? `: ${data.error.message}` : "";
+  } catch (error) {
+    detail = "";
+  }
+  return new Error(`${backendName} respondió ${response.status}${detail}`);
+}
+
+async function firestoreFetch(path, options = {}, signal) {
+  const method = String(options.method || "GET").toUpperCase();
+
+  if (method === "GET" && path === "sessions") {
+    const sessions = {};
+    let pageToken = "";
+    do {
+      const response = await fetch(firestoreUrl(firestoreCollectionName(), {
+        pageSize: "300",
+        ...(pageToken ? { pageToken } : {}),
+      }), { method: "GET", signal });
+      if (!response.ok) {
+        throw await cloudResponseError(response, "Firestore");
+      }
+      const data = await response.json();
+      (data.documents || []).forEach((document) => {
+        const session = fromFirestoreFields(document.fields || {});
+        const id = session.id || firestoreDocumentId(document);
+        if (id) {
+          sessions[id] = { ...session, id };
+        }
+      });
+      pageToken = data.nextPageToken || "";
+    } while (pageToken);
+    return sessions;
+  }
+
+  if ((method === "PUT" || method === "PATCH") && path.startsWith("sessions/")) {
+    const documentId = decodeURIComponent(path.slice("sessions/".length));
+    const payload = readCloudBody(options);
+    const response = await fetch(firestoreUrl(`${firestoreCollectionName()}/${encodeURIComponent(documentId)}`), {
+      method: "PATCH",
+      signal,
       headers: {
         "Content-Type": "application/json",
         ...(options.headers || {}),
       },
+      body: JSON.stringify({ fields: toFirestoreFields(payload) }),
     });
     if (!response.ok) {
-      throw new Error(`Firebase respondió ${response.status}`);
+      throw await cloudResponseError(response, "Firestore");
     }
-    return await response.json();
+    const data = await response.json();
+    return fromFirestoreFields(data.fields || {});
+  }
+
+  throw new Error(`Operación Firestore no soportada: ${method} ${path}`);
+}
+
+async function realtimeFetch(path, options = {}, signal) {
+  const response = await fetch(realtimeCloudUrl(path), {
+    ...options,
+    signal,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  if (!response.ok) {
+    throw await cloudResponseError(response, "Firebase");
+  }
+  return await response.json();
+}
+
+async function cloudFetch(path, options = {}) {
+  if (!isCloudConfigured() || typeof fetch !== "function") return null;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    if (typeof DOMException === "function") {
+      controller.abort(new DOMException(cloudTimeoutMessage(), "TimeoutError"));
+      return;
+    }
+    controller.abort();
+  }, CLOUD_TIMEOUT_MS);
+  try {
+    return isFirestoreProvider()
+      ? await firestoreFetch(path, options, controller.signal)
+      : await realtimeFetch(path, options, controller.signal);
+  } catch (error) {
+    if (isCloudTimeoutError(error)) {
+      const timeoutError = new Error(cloudTimeoutMessage());
+      timeoutError.name = "CloudTimeoutError";
+      throw timeoutError;
+    }
+    throw error;
   } finally {
     window.clearTimeout(timeoutId);
+  }
+}
+
+async function flushCloudWriteQueue() {
+  if (cloudQueueFlushInProgress) {
+    scheduleCloudWriteFlush(750);
+    return false;
+  }
+  if (!isCloudConfigured() || typeof fetch !== "function") return false;
+  const queue = loadPendingCloudWrites();
+  const entries = Object.entries(queue);
+  if (entries.length === 0) return true;
+
+  cloudQueueFlushInProgress = true;
+  try {
+    for (const [key, write] of entries) {
+      try {
+        await cloudFetch(write.path, {
+          method: write.method || "PUT",
+          body: write.body || "",
+        });
+        const latestQueue = loadPendingCloudWrites();
+        if (latestQueue[key] && latestQueue[key].updatedAt === write.updatedAt) {
+          delete latestQueue[key];
+          savePendingCloudWrites(latestQueue);
+        }
+      } catch (error) {
+        const latestQueue = loadPendingCloudWrites();
+        const latestWrite = latestQueue[key] || write;
+        if (!latestQueue[key] || latestWrite.updatedAt === write.updatedAt) {
+          latestQueue[key] = {
+            ...latestWrite,
+            attempts: (Number(latestWrite.attempts) || 0) + 1,
+            lastAttemptAt: new Date().toISOString(),
+            lastError: error.message || error.name || String(error),
+          };
+          savePendingCloudWrites(latestQueue);
+        }
+        if (isCloudTimeoutError(error)) {
+          console.info(`${cloudBackendName()} en espera:`, error.message);
+        } else {
+          console.warn(`No se pudo subir la cola a ${cloudBackendName()}. Se reintentará luego.`, error);
+        }
+        return false;
+      }
+    }
+    if (Object.keys(loadPendingCloudWrites()).length > 0) {
+      scheduleCloudWriteFlush();
+    }
+    return true;
+  } finally {
+    cloudQueueFlushInProgress = false;
   }
 }
 
@@ -657,14 +994,20 @@ function mergeSessionCollections(localSessions, cloudSessions) {
   return merged;
 }
 
-async function syncCloudSessions() {
+async function syncCloudSessions(options = {}) {
+  const { updateActiveSession = true, renderRanking = true } = options;
   if (!isCloudConfigured()) return false;
   try {
+    const queueFlushed = await flushCloudWriteQueue();
+    if (!queueFlushed && Object.keys(loadPendingCloudWrites()).length > 0) {
+      console.info(`${cloudBackendName()} en espera: hay cambios locales esperando conexión para subirse.`);
+      return false;
+    }
     const cloudSessions = await cloudFetch("sessions", { method: "GET" });
-    const localSessions = loadStoredJson(STORAGE_KEYS.sessions) || {};
+    const localSessions = loadStoredSessions();
     const merged = mergeSessionCollections(localSessions, cloudSessions || {});
     saveStoredSessions(merged);
-    if (sessionLog && merged[sessionLog.id]) {
+    if (updateActiveSession && sessionLog && merged[sessionLog.id]) {
       sessionLog = normalizeSessionLog(merged[sessionLog.id]);
       studentName = sessionLog.studentName;
       phase = sessionLog.currentPhase;
@@ -672,9 +1015,15 @@ async function syncCloudSessions() {
       setStudentNameUI();
       updatePhaseButtons();
     }
-    renderLeaderboards();
+    if (renderRanking) {
+      renderLeaderboards();
+    }
     return true;
   } catch (error) {
+    if (isCloudTimeoutError(error)) {
+      console.info(`${cloudBackendName()} en espera:`, error.message);
+      return false;
+    }
     console.warn("No se pudo sincronizar con la base de datos en la nube.", error);
     return false;
   }
@@ -683,12 +1032,13 @@ async function syncCloudSessions() {
 function saveSessionToCloud(session) {
   if (!isCloudConfigured() || !session) return;
   const payload = JSON.parse(JSON.stringify(session));
-  cloudFetch(`sessions/${encodeURIComponent(payload.id)}`, {
+  const path = `sessions/${encodeURIComponent(payload.id)}`;
+  const options = {
     method: "PUT",
     body: JSON.stringify(payload),
-  }).catch((error) => {
-    console.warn("No se pudo guardar la sesión en la nube.", error);
-  });
+  };
+  queueCloudWrite(path, options);
+  scheduleCloudWriteFlush(0);
 }
 
 function getCurrentGameNumber() {
@@ -715,7 +1065,7 @@ function saveSessionLog() {
   sessions[sessionLog.id] = sessionLog;
   saveStoredSessions(sessions);
   saveSessionToCloud(sessionLog);
-  renderLeaderboards();
+  scheduleLeaderboardRender();
 }
 
 function getSessionById(sessionId) {
@@ -1126,11 +1476,15 @@ function renderLeaderboards() {
   }
 }
 
-async function openLeaderboard() {
+function openLeaderboard() {
   if (!leaderboardModalEl) return;
-  await syncCloudSessions();
   renderLeaderboards();
   leaderboardModalEl.hidden = false;
+  syncCloudSessions({ updateActiveSession: false }).then((ok) => {
+    if (ok && !leaderboardModalEl.hidden) {
+      renderLeaderboards();
+    }
+  });
 }
 
 function closeLeaderboard() {
@@ -1412,7 +1766,7 @@ function beginStudentSession(name) {
   unlockedIndex = 0;
   localStorage.setItem(STORAGE_KEYS.currentStudent, name);
   localStorage.setItem(STORAGE_KEYS.currentSession, sessionLog.id);
-  saveSessionLog();
+  addSessionEvent("session-start", "Registro de estudiante iniciado.", phase);
   setStudentNameUI();
   closeStudentModal();
   errorsPanel.style.display = "none";
@@ -1429,7 +1783,7 @@ function activateStoredSession(storedSession) {
   unlockedIndex = getUnlockedIndexFromSession(sessionLog);
   localStorage.setItem(STORAGE_KEYS.currentStudent, studentName);
   localStorage.setItem(STORAGE_KEYS.currentSession, sessionLog.id);
-  saveSessionLog();
+  addSessionEvent("session-resume", "Sesión del estudiante retomada.", phase);
   setStudentNameUI();
   return true;
 }
@@ -1437,7 +1791,7 @@ function activateStoredSession(storedSession) {
 function logoutStudent() {
   if (drawState.active) stopGraphicDraw();
   saveCurrentGameState(false);
-  saveSessionLog();
+  addSessionEvent("session-exit", "El estudiante salió de la sesión.", phase);
   closeFinalCelebration();
   studentName = "";
   sessionLog = null;
@@ -2601,6 +2955,7 @@ function finishGame() {
   unlockNextPhase();
   setPhaseCompleteActions(!completedAllPhases);
   saveCurrentGameState(true);
+  addSessionEvent("phase-complete", `${phaseLabel(phase)} completada.`, phase);
   saveSessionLog();
   if (completedAllPhases) {
     openFinalCelebration();
@@ -2687,7 +3042,7 @@ function setPhase(nextPhase) {
   phase = nextPhase;
   resetPhaseUI();
   updatePhaseButtons();
-  saveSessionLog();
+  addSessionEvent("phase-start", `${phaseLabel(nextPhase)} iniciada.`, nextPhase);
   startPhaseGame();
 }
 
@@ -2736,7 +3091,6 @@ async function initApp() {
   setupBrowserNavigation();
   initGraphicTools();
   initPhaseBar();
-  await syncCloudSessions();
   renderLeaderboards();
   if (hydrateStudentSession()) {
     renderSessionLog();
@@ -2746,6 +3100,13 @@ async function initApp() {
     showMainMenu("inicio");
     openStudentModal();
   }
+  syncCloudSessions({ updateActiveSession: Boolean(sessionLog) }).then((ok) => {
+    if (!ok) return;
+    renderLeaderboards();
+    if (sessionLog) {
+      renderSessionLog();
+    }
+  });
 }
 
 // ======= Start =======
