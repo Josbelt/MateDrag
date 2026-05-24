@@ -542,7 +542,7 @@ function canCheckCurrentAnswer() {
     }
     if (q.op.sym === "÷") {
       const total = groupCounts.reduce((sum, count) => sum + count, 0);
-      return total >= q.a;
+      return total >= q.a && hasTypedNumericAnswer();
     }
   }
 
@@ -3028,7 +3028,10 @@ function checkAnswer() {
     if (q.op.sym === "×") {
       ok = everyGroupOk && total === q.groupCount * q.groupSize;
     } else {
-      ok = everyGroupOk && total === q.a;
+      const typed = Number.parseInt(numericAnswerEl.value, 10);
+      game.answer = Number.isFinite(typed) ? typed : 0;
+      answerCountEl.textContent = String(game.answer);
+      ok = everyGroupOk && total === q.a && game.answer === q.correct;
     }
   }
 
