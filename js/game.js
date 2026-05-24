@@ -160,6 +160,8 @@ const STORAGE_KEYS = {
   sessions: "matedrag.sessions",
   pendingCloudWrites: "matedrag.pendingCloudWrites",
 };
+const STORAGE_RESET_KEY = "matedrag.resetVersion";
+const STORAGE_RESET_VERSION = "fresh-start-20260524";
 
 const CLOUD_CONFIG = window.MATEDRAG_CLOUD || {};
 const CLOUD_TIMEOUT_MS = 15000;
@@ -171,6 +173,8 @@ let cloudQueueFlushInProgress = false;
 let cloudQueueFlushTimer = 0;
 let storedSessionsCache = null;
 let leaderboardRenderQueued = false;
+
+resetStoredDataForFreshStart();
 
 clearBtnEl.addEventListener("click", clearAnswer);
 checkBtnEl.addEventListener("click", checkAnswer);
@@ -596,6 +600,16 @@ function loadStoredJson(key) {
     return raw ? JSON.parse(raw) : null;
   } catch (error) {
     return null;
+  }
+}
+
+function resetStoredDataForFreshStart() {
+  try {
+    if (localStorage.getItem(STORAGE_RESET_KEY) === STORAGE_RESET_VERSION) return;
+    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+    localStorage.setItem(STORAGE_RESET_KEY, STORAGE_RESET_VERSION);
+  } catch (error) {
+    // Si el navegador bloquea localStorage, el juego puede seguir funcionando en memoria.
   }
 }
 
