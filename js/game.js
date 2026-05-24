@@ -3095,6 +3095,11 @@ function goToNextPhase() {
 
 function finishGame() {
   stopGraphicDraw();
+  const completedAllPhases = phase === PHASES[PHASES.length - 1];
+  const phaseEndTitle = completedAllPhases ? "¡Ruta completada!" : "¡Fase completada!";
+  const phaseEndMessage = completedAllPhases
+    ? "Terminaste todas las fases de Ruta Numérica."
+    : "Puedes continuar con la siguiente fase desbloqueada o volver al inicio.";
   updateProgressBar(TOTAL_QUESTIONS);
   graphicWorkspaceEl.style.display = "none";
   inputAnswerWrapEl.style.display = "none";
@@ -3105,22 +3110,22 @@ function finishGame() {
   dropzoneEl.style.display = "none";
   if (phase === "concreta") {
     optionsWrapEl.style.display = "none";
-    visualConcreteEl.textContent = "¡Partida terminada!";
+    visualConcreteEl.textContent = phaseEndTitle;
     visualConcreteEl.style.display = "flex";
     concreteSubEl.style.display = "none";
   } else {
     optionsWrapEl.style.display = "none";
-    visualOpEl.textContent = "¡Partida terminada!";
-    mathOpEl.textContent = "Puedes reiniciar esta fase o continuar con la siguiente fase desbloqueada.";
+    visualOpEl.textContent = phaseEndTitle;
+    mathOpEl.textContent = phaseEndMessage;
   }
   tokenPoolEl.innerHTML = "";
   clearDropzoneVisuals();
   answerCountEl.textContent = "0";
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
-  const completedAllPhases = phase === PHASES[PHASES.length - 1];
   unlockNextPhase();
   setPhaseCompleteActions(!completedAllPhases);
+  answerPanelEl.style.display = completedAllPhases ? "none" : "";
   saveCurrentGameState(true);
   addSessionEvent("phase-complete", `${phaseLabel(phase)} completada.`, phase);
   saveSessionLog();
