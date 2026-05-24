@@ -10,7 +10,7 @@
   <title>Ruta Numérica</title>
   <link rel="icon" type="image/svg+xml" href="img/favicon.svg" />
   <link rel="preload" as="image" href="img/menu-background.png" fetchpriority="high" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=drag-20260524" />
 </head>
 <body>
   <div class="bg"></div>
@@ -35,7 +35,6 @@
             <button class="logoutStudentBtn playerLogoutBtn dangerBtn" data-logout-student type="button" hidden>Salir</button>
           </div>
           <div class="teacherActionsStack">
-            <button class="soundButton" type="button" aria-label="Sonido">🔊</button>
             <button class="teacherAccessBtn" id="openTeacherMenuBtn" type="button" aria-label="Panel del profesor" title="Profesor">
               <img src="img/profesor-icon.svg" alt="" aria-hidden="true" width="96" height="96" decoding="async" />
             </button>
@@ -205,7 +204,7 @@
         <div class="row">
           <div class="panel" id="tokensPanel">
             <h2>Arrastra fichas</h2>
-            <p class="hint">Arrastra o toca las fichas para responder.</p>
+            <p class="hint">Arrastra las fichas para responder.</p>
 
             <div class="tokens" id="tokenPool" aria-label="Fichas disponibles"></div>
           </div>
@@ -360,7 +359,7 @@
     </section>
   </main>
 
-  <script src="js/cloud-config.js?v=realtime-20260524" defer></script>
-  <script src="js/game.js?v=realtime-20260524" defer></script>
+  <script src="js/cloud-config.js?v=drag-20260524" defer></script>
+  <script src="js/game.js?v=drag-20260524" defer></script>
 </body>
 </html>

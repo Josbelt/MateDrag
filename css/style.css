@@ -149,7 +149,7 @@ body{
   grid-template-columns:minmax(230px, 320px) minmax(410px, 520px);
   gap:18px;
   justify-content:space-between;
-  align-items:center;
+  align-items:start;
 }
 
 .brandBadge,
@@ -252,7 +252,7 @@ body{
 
 .menuAccountArea{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:flex-end;
   gap:22px;
   justify-self:end;
@@ -345,6 +345,7 @@ body{
   display:grid;
   gap:12px;
   justify-items:center;
+  align-self:start;
   flex:0 0 auto;
 }
 
@@ -452,31 +453,6 @@ body{
 
 .avatarFace span::before{ left:23px; }
 .avatarFace span::after{ right:23px; }
-
-.soundButton{
-  position:absolute;
-  right:26px;
-  top:218px;
-  z-index:5;
-  width:68px;
-  height:68px;
-  border-radius:50%;
-  border:4px solid rgba(255,255,255,.85);
-  background:linear-gradient(180deg, #ffe86b, #f9a51d);
-  box-shadow:0 8px 0 #b16b08, 0 14px 22px rgba(0,0,0,.22);
-  font-size:30px;
-  cursor:pointer;
-}
-
-.teacherActionsStack .soundButton{
-  position:static;
-  width:76px;
-  height:76px;
-  margin:0;
-  border-radius:18px;
-  border:4px solid rgba(255,255,255,.85);
-  font-size:30px;
-}
 
 .sceneLayer{
   display:none;
@@ -1559,15 +1535,6 @@ body{
     display:none;
   }
 
-  .soundButton{
-    position:static;
-    margin:12px 0 0 auto;
-    display:grid;
-    place-items:center;
-    width:56px;
-    height:56px;
-    font-size:24px;
-  }
 }
 
 @media (max-width: 620px){
@@ -1614,10 +1581,6 @@ body{
   .leaderboardMiniBtn img{
     width:56px;
     height:56px;
-  }
-
-  .soundButton{
-    margin-right:auto;
   }
 
   .menuHero{
@@ -1858,8 +1821,8 @@ h1{
   padding:10px;
   min-width:150px;
   flex:1 1 150px;
-  cursor:pointer;
-  touch-action:manipulation;
+  cursor:default;
+  touch-action:auto;
 }
 
 .group.dragover{
@@ -2112,11 +2075,28 @@ h1{
   box-shadow: 0 10px 18px #00000018;
   cursor:grab;
   transition:.15s;
-  touch-action:manipulation;
+  touch-action:none;
+  user-select:none;
 }
 
 .token:hover{
   transform: translateY(-3px);
+}
+
+.token.dragSource{
+  opacity:.55;
+  transform:none;
+}
+
+.tokenDragGhost{
+  position:fixed;
+  z-index:9999;
+  left:0;
+  top:0;
+  pointer-events:none;
+  transform:translate(-50%, -50%) scale(1.06);
+  opacity:.96;
+  box-shadow:0 16px 28px rgba(18,42,87,.28);
 }
 
 .token img{
@@ -4009,15 +3989,6 @@ h1{
     height:44px;
   }
 
-  .soundButton{
-    width:50px;
-    height:50px;
-    margin:12px auto 0;
-    font-size:23px;
-    border-width:3px;
-    box-shadow:0 6px 0 #b16b08, 0 10px 18px rgba(0,0,0,.18);
-  }
-
   .menuHero{
     width:100%;
     margin-top:14px;
@@ -4160,14 +4131,13 @@ h1{
     grid-column:2;
     grid-row:1;
     display:grid;
-    grid-template-columns:repeat(3, 46px);
+    grid-template-columns:repeat(2, 46px);
     justify-content:end;
     gap:8px;
   }
 
   .teacherAccessBtn,
-  .leaderboardMiniBtn,
-  .teacherActionsStack .soundButton{
+  .leaderboardMiniBtn{
     width:46px;
     height:46px;
     padding:5px;
@@ -4178,11 +4148,6 @@ h1{
 
   .leaderboardMiniBtn{
     box-shadow:0 4px 0 #b37d18, 0 8px 14px rgba(0,0,0,.16);
-  }
-
-  .teacherActionsStack .soundButton{
-    font-size:20px;
-    box-shadow:0 4px 0 #b16b08, 0 8px 14px rgba(0,0,0,.16);
   }
 
   .leaderboardMiniBtn img{
@@ -4298,13 +4263,12 @@ h1{
   }
 
   .teacherActionsStack{
-    grid-template-columns:repeat(3, 42px);
+    grid-template-columns:repeat(2, 42px);
     gap:7px;
   }
 
   .teacherAccessBtn,
-  .leaderboardMiniBtn,
-  .teacherActionsStack .soundButton{
+  .leaderboardMiniBtn{
     width:42px;
     height:42px;
   }
@@ -4312,10 +4276,6 @@ h1{
   .leaderboardMiniBtn img{
     width:30px;
     height:30px;
-  }
-
-  .soundButton{
-    font-size:17px;
   }
 
   .phaseCards{

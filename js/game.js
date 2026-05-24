@@ -58,6 +58,13 @@ let drawState = {
   startX: 0,
   startY: 0,
 };
+let tokenDragState = {
+  active: false,
+  token: null,
+  ghost: null,
+  currentTarget: null,
+  pointerId: null,
+};
 
 // ======= DOM =======
 const qIndexEl = document.getElementById("qIndex");
@@ -133,7 +140,6 @@ const playPhaseBtns = Array.from(document.querySelectorAll(".playPhaseBtn"));
 const menuPhaseCards = Array.from(document.querySelectorAll("[data-phase-card]"));
 const menuNavBtns = Array.from(document.querySelectorAll(".menuNavBtn"));
 const adventureSteps = Array.from(document.querySelectorAll(".adventureTrack .step"));
-const soundButtonEl = document.querySelector(".soundButton");
 const openTeacherMenuBtnEl = document.getElementById("openTeacherMenuBtn");
 const openTeacherStudentBtnEl = document.getElementById("openTeacherStudentBtn");
 const teacherModalEl = document.getElementById("teacherModal");
@@ -159,7 +165,6 @@ const CLOUD_TIMEOUT_MS = 15000;
 
 let studentName = "";
 let sessionLog = null;
-let soundEnabled = true;
 let suppressHistoryUpdate = false;
 let cloudQueueFlushInProgress = false;
 let cloudQueueFlushTimer = 0;
@@ -251,14 +256,6 @@ playPhaseBtns.forEach((btn) => {
 menuNavBtns.forEach((btn) => {
   btn.addEventListener("click", () => handleMenuNav(btn.dataset.menu));
 });
-
-if (soundButtonEl) {
-  soundButtonEl.addEventListener("click", () => {
-    soundEnabled = !soundEnabled;
-    soundButtonEl.textContent = soundEnabled ? "🔊" : "🔇";
-    soundButtonEl.setAttribute("aria-label", soundEnabled ? "Sonido activado" : "Sonido desactivado");
-  });
-}
 
 [openTeacherMenuBtnEl, openTeacherStudentBtnEl].filter(Boolean).forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -2419,7 +2416,7 @@ function loadQuestionConcrete(q) {
   if (q.op.sym === "+") {
     tokensPanelEl.style.display = "";
     if (tokensHintEl) {
-      tokensHintEl.textContent = "Arrastra o toca las fichas para responder.";
+      tokensHintEl.textContent = "Arrastra las fichas para responder.";
     }
     answerPanelEl.style.display = "";
     dropzoneEl.style.display = "";
@@ -2461,7 +2458,7 @@ function loadQuestionConcrete(q) {
   } else {
     tokensPanelEl.style.display = "";
     if (tokensHintEl) {
-      tokensHintEl.textContent = "Arrastra una ficha a cada grupo o toca un grupo para agregarla.";
+      tokensHintEl.textContent = "Arrastra una ficha a cada grupo para agregarla.";
     }
     answerPanelEl.style.display = "";
     dropzoneEl.style.display = "none";
@@ -2701,21 +2698,8 @@ function renderGroupArea(q, opText) {
     const group = document.createElement("div");
     group.className = "group";
     group.dataset.groupIndex = String(i);
-    group.tabIndex = 0;
-    group.setAttribute("role", "button");
-    group.setAttribute("aria-label", `Grupo ${i + 1}. Toca para agregar una ficha.`);
+    group.setAttribute("aria-label", `Grupo ${i + 1}. Arrastra una ficha aquí.`);
     group.innerHTML = `<div class="group-title">Grupo ${i + 1}</div><div class="group-body"></div>`;
-
-    group.addEventListener("click", () => {
-      if (game.locked) return;
-      addTokenToGroup(group, q.token);
-    });
-    group.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter" && e.key !== " ") return;
-      e.preventDefault();
-      if (game.locked) return;
-      addTokenToGroup(group, q.token);
-    });
     group.addEventListener("dragover", (e) => {
       e.preventDefault();
       group.classList.add("dragover");
@@ -2778,14 +2762,136 @@ function clearGroupArea(q) {
 }
 
 // ======= Drag tokens =======
+function canStartTokenDrag(token) {
+  const q = game.questions[game.current];
+  return Boolean(
+    !game.locked
+    && phase === "concreta"
+    && q
+    && token
+    && token.key === q.token.key
+    && q.op.sym !== "-"
+  );
+}
+
+function positionTokenGhost(clientX, clientY) {
+  if (!tokenDragState.ghost) return;
+  tokenDragState.ghost.style.left = `${clientX}px`;
+  tokenDragState.ghost.style.top = `${clientY}px`;
+}
+
+function getTokenDropTarget(clientX, clientY) {
+  const q = game.questions[game.current];
+  const el = document.elementFromPoint(clientX, clientY);
+  if (!q || !el) return null;
+
+  if (q.op.sym === "+") {
+    const target = el.closest("#dropzone");
+    return target === dropzoneEl ? dropzoneEl : null;
+  }
+
+  if (q.op.sym === "×" || q.op.sym === "÷") {
+    const group = el.closest(".group");
+    return group && groupEls.includes(group) ? group : null;
+  }
+
+  return null;
+}
+
+function setTokenDragTarget(target) {
+  if (tokenDragState.currentTarget === target) return;
+  if (tokenDragState.currentTarget) {
+    tokenDragState.currentTarget.classList.remove("dragover");
+  }
+  tokenDragState.currentTarget = target;
+  if (target) {
+    target.classList.add("dragover");
+  }
+}
+
+function moveTokenDrag(event) {
+  if (!tokenDragState.active || event.pointerId !== tokenDragState.pointerId) return;
+  if (event.cancelable) event.preventDefault();
+  positionTokenGhost(event.clientX, event.clientY);
+  setTokenDragTarget(getTokenDropTarget(event.clientX, event.clientY));
+}
+
+function cleanupTokenDrag() {
+  if (tokenDragState.currentTarget) {
+    tokenDragState.currentTarget.classList.remove("dragover");
+  }
+  if (tokenDragState.ghost) {
+    tokenDragState.ghost.remove();
+  }
+  if (tokenDragState.sourceEl) {
+    tokenDragState.sourceEl.classList.remove("dragSource");
+  }
+  window.removeEventListener("pointermove", moveTokenDrag);
+  window.removeEventListener("pointerup", finishTokenDrag);
+  window.removeEventListener("pointercancel", cancelTokenDrag);
+  tokenDragState = {
+    active: false,
+    token: null,
+    ghost: null,
+    currentTarget: null,
+    pointerId: null,
+  };
+}
+
+function finishTokenDrag(event) {
+  if (!tokenDragState.active || event.pointerId !== tokenDragState.pointerId) return;
+  if (event.cancelable) event.preventDefault();
+  moveTokenDrag(event);
+  const target = tokenDragState.currentTarget;
+  const token = tokenDragState.token;
+  if (target && token) {
+    if (target === dropzoneEl) {
+      addTokenToAnswer(token);
+    } else {
+      addTokenToGroup(target, token);
+    }
+  }
+  cleanupTokenDrag();
+}
+
+function cancelTokenDrag(event) {
+  if (event && tokenDragState.active && event.pointerId !== tokenDragState.pointerId) return;
+  cleanupTokenDrag();
+}
+
+function startTokenDrag(token, sourceEl, event) {
+  if (typeof event.button === "number" && event.button !== 0) return;
+  if (!canStartTokenDrag(token)) return;
+  if (event.cancelable) event.preventDefault();
+
+  const ghost = sourceEl.cloneNode(true);
+  ghost.classList.add("tokenDragGhost");
+  ghost.removeAttribute("id");
+  document.body.appendChild(ghost);
+  sourceEl.classList.add("dragSource");
+
+  tokenDragState = {
+    active: true,
+    token,
+    ghost,
+    currentTarget: null,
+    pointerId: event.pointerId,
+    sourceEl,
+  };
+
+  positionTokenGhost(event.clientX, event.clientY);
+  window.addEventListener("pointermove", moveTokenDrag, { passive: false });
+  window.addEventListener("pointerup", finishTokenDrag, { passive: false });
+  window.addEventListener("pointercancel", cancelTokenDrag);
+}
+
 function createDraggableToken(token) {
   const el = document.createElement("div");
   el.className = "token";
-  el.draggable = true;
+  el.draggable = false;
   el.dataset.tokenKey = token.key;
-  el.tabIndex = 0;
-  el.setAttribute("role", "button");
-  el.setAttribute("aria-label", `Agregar ${token.label}`);
+  el.setAttribute("role", "img");
+  el.setAttribute("aria-label", `Ficha de ${token.label}. Arrástrala a la respuesta.`);
 
   const img = document.createElement("img");
   img.src = token.img;
@@ -2793,33 +2899,9 @@ function createDraggableToken(token) {
 
   el.appendChild(img);
 
-  el.addEventListener("dragstart", (e) => {
-    el.dataset.dragging = "true";
-    e.dataTransfer.setData("text/tokenKey", token.key);
-  });
-  el.addEventListener("dragend", () => {
-    window.setTimeout(() => {
-      delete el.dataset.dragging;
-    }, 150);
-  });
-  el.addEventListener("click", () => {
-    if (el.dataset.dragging === "true") return;
-    handleTokenTap(token);
-  });
-  el.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter" && e.key !== " ") return;
-    e.preventDefault();
-    handleTokenTap(token);
-  });
+  el.addEventListener("pointerdown", (event) => startTokenDrag(token, el, event));
 
   return el;
-}
-
-function handleTokenTap(token) {
-  if (game.locked || phase !== "concreta") return;
-  const q = game.questions[game.current];
-  if (!q || token.key !== q.token.key || q.op.sym !== "+") return;
-  addTokenToAnswer(token);
 }
 
 function addTokenToAnswer(token) {
