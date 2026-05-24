@@ -3124,6 +3124,15 @@ h1{
   margin-top:18px;
 }
 
+.gameScreen .row.optionsOnlyRow{
+  grid-template-columns:minmax(360px, 760px);
+  justify-content:center;
+}
+
+.gameScreen .row.optionsOnlyRow .answer{
+  width:100%;
+}
+
 .gameScreen .panel{
   min-height:190px;
   padding:24px 26px;
@@ -3264,6 +3273,10 @@ h1{
   }
 
   .gameScreen .row{
+    grid-template-columns:1fr;
+  }
+
+  .gameScreen .row.optionsOnlyRow{
     grid-template-columns:1fr;
   }
 }

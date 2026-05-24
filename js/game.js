@@ -82,6 +82,7 @@ const feedbackEl = document.getElementById("feedback");
 const tokensPanelEl = document.getElementById("tokensPanel");
 const tokensHintEl = tokensPanelEl ? tokensPanelEl.querySelector(".hint") : null;
 const answerPanelEl = document.getElementById("answerPanel");
+const answerRowEl = answerPanelEl ? answerPanelEl.closest(".row") : null;
 const graphicWorkspaceEl = document.getElementById("graphicWorkspace");
 const drawToolsEl = document.getElementById("drawTools");
 const drawZoneAEl = document.getElementById("drawZoneA");
@@ -557,6 +558,11 @@ function updateCheckButtonState() {
   const canCheck = canCheckCurrentAnswer();
   checkBtnEl.disabled = !canCheck;
   checkBtnEl.setAttribute("aria-disabled", canCheck ? "false" : "true");
+}
+
+function setOptionsCentered(isCentered) {
+  if (!answerRowEl) return;
+  answerRowEl.classList.toggle("optionsOnlyRow", Boolean(isCentered));
 }
 
 function createEmptyPhaseBuckets() {
@@ -2342,6 +2348,7 @@ function loadQuestion() {
   game.answer = 0;
   game.locked = false;
   setPhaseCompleteActions(false);
+  setOptionsCentered(false);
   answerBarEl.style.display = "";
   answerSummaryWrapEl.style.display = "";
   updateAnswerLabel();
@@ -2371,6 +2378,7 @@ function loadQuestion() {
   concreteSubEl.style.display = "none";
 
   tokensPanelEl.style.display = "none";
+  setOptionsCentered(true);
   answerPanelEl.style.display = "";
   dropzoneEl.style.display = "none";
   inputAnswerWrapEl.style.display = "none";
@@ -2398,6 +2406,7 @@ function loadQuestion() {
 }
 
 function loadQuestionConcrete(q) {
+  setOptionsCentered(false);
   optionsWrapEl.style.display = "none";
   graphicWorkspaceEl.style.display = "none";
   clearBtnEl.style.display = "";
@@ -2490,6 +2499,7 @@ function loadQuestionConcrete(q) {
 }
 
 function loadQuestionGrafica(q) {
+  setOptionsCentered(false);
   optionsWrapEl.style.display = "none";
   graphicWorkspaceEl.style.display = "block";
   clearBtnEl.style.display = "";
@@ -2533,6 +2543,7 @@ function loadQuestionGrafica(q) {
 }
 
 function loadQuestionComplementaria(q) {
+  setOptionsCentered(true);
   optionsWrapEl.style.display = "grid";
   graphicWorkspaceEl.style.display = "none";
   clearBtnEl.style.display = "none";
