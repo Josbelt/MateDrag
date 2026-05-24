@@ -184,7 +184,7 @@ body{
 
   .menuAccountArea{
     grid-column:2;
-    margin-top:10px;
+    margin-top:-14px;
   }
 
   .brandBadge{
