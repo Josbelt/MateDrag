@@ -2655,16 +2655,17 @@ h1{
   transition:transform .14s ease, background .14s ease, border-color .14s ease, box-shadow .14s ease, color .14s ease;
 }
 
-.optionBtn:hover,
-.optionBtn:focus-visible{
-  background: var(--c4);
-  transform:translateY(-2px);
-  box-shadow:0 12px 22px rgba(39,68,126,.14);
-}
-
 .optionBtn:active{
   transform:translateY(1px);
   box-shadow:0 5px 12px rgba(39,68,126,.12);
+}
+
+@media (hover:hover) and (pointer:fine){
+  .optionBtn:hover{
+    background: var(--c4);
+    transform:translateY(-2px);
+    box-shadow:0 12px 22px rgba(39,68,126,.14);
+  }
 }
 
 .optionBtn.selected{
@@ -3285,9 +3286,10 @@ h1{
   border-radius:16px;
 }
 
-.gameScreen .optionBtn:hover,
-.gameScreen .optionBtn:focus-visible{
-  border-color:#5966d7;
+@media (hover:hover) and (pointer:fine){
+  .gameScreen .optionBtn:hover{
+    border-color:#5966d7;
+  }
 }
 
 @keyframes tokenLift{
