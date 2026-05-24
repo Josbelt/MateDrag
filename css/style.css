@@ -409,6 +409,17 @@ body{
   box-shadow:0 4px 0 #b37d18, 0 10px 18px rgba(0,0,0,.18);
 }
 
+.teacherAccessBtn:focus-visible,
+.leaderboardMiniBtn:focus-visible,
+.menuNavBtn:focus-visible,
+.playPhaseBtn:focus-visible,
+.phaseBtn:focus-visible,
+.btn:focus-visible,
+.optionBtn:focus-visible{
+  outline:4px solid rgba(255,226,83,.95);
+  outline-offset:4px;
+}
+
 .avatarFace{
   width:74px;
   height:74px;
@@ -1831,6 +1842,9 @@ h1{
 
 .group.dragover{
   background: var(--c4);
+  border-color:#4f63ef;
+  box-shadow:0 0 0 5px rgba(99,117,242,.16), 0 12px 22px rgba(57,85,160,.16);
+  transform:translateY(-2px);
 }
 
 .group-title{
@@ -2078,18 +2092,21 @@ h1{
   place-items:center;
   box-shadow: 0 10px 18px #00000018;
   cursor:grab;
-  transition:.15s;
+  transition:transform .16s ease, filter .16s ease, box-shadow .16s ease, opacity .16s ease;
   touch-action:none;
   user-select:none;
 }
 
-.token:hover{
+.token:hover,
+.token:focus-visible{
   transform: translateY(-3px);
+  filter:brightness(1.04);
+  box-shadow:0 13px 20px rgba(25,75,130,.18);
 }
 
 .token.dragSource{
   opacity:.55;
-  transform:none;
+  transform:scale(.92);
 }
 
 .tokenDragGhost{
@@ -2101,6 +2118,7 @@ h1{
   transform:translate(-50%, -50%) scale(1.06);
   opacity:.96;
   box-shadow:0 16px 28px rgba(18,42,87,.28);
+  animation:tokenLift .18s ease-out both;
 }
 
 .token img{
@@ -2122,10 +2140,14 @@ h1{
   flex-wrap:wrap;
   align-content:flex-start;
   gap:12px;
+  transition:background .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease;
 }
 
 .dropzone.dragover{
   background: var(--c4);
+  border-color:#4f63ef;
+  box-shadow:0 0 0 6px rgba(99,117,242,.18), 0 14px 24px rgba(57,85,160,.16);
+  transform:translateY(-2px);
 }
 
 .dropHint{
@@ -2150,6 +2172,7 @@ h1{
   background:#fffef9;
   box-shadow:0 5px 10px #0000001a;
   touch-action:manipulation;
+  transition:transform .14s ease, filter .14s ease, box-shadow .14s ease;
 }
 
 .btn.primary{
@@ -2168,6 +2191,12 @@ h1{
 
 .btn:hover{
   filter:brightness(1.05);
+  transform:translateY(-1px);
+}
+
+.btn:active{
+  transform:translateY(2px);
+  box-shadow:0 2px 6px #00000018;
 }
 
 .btn:disabled,
@@ -2182,6 +2211,7 @@ h1{
 .btn:disabled:hover,
 .btn[aria-disabled="true"]:hover{
   filter:grayscale(.35);
+  transform:none;
 }
 
 /* =====================================================
@@ -2193,8 +2223,15 @@ h1{
   font-weight:700;
 }
 
-.feedback.ok{ color:var(--ok); }
-.feedback.bad{ color:var(--bad); }
+.feedback.ok{
+  color:var(--ok);
+  animation:feedbackPop .28s ease-out both;
+}
+
+.feedback.bad{
+  color:var(--bad);
+  animation:feedbackShake .24s ease-out both;
+}
 
 .studentModal{
   position:fixed;
@@ -2615,16 +2652,26 @@ h1{
   cursor:pointer;
   box-shadow:0 8px 16px #00000012;
   touch-action:manipulation;
+  transition:transform .14s ease, background .14s ease, border-color .14s ease, box-shadow .14s ease, color .14s ease;
 }
 
-.optionBtn:hover{
+.optionBtn:hover,
+.optionBtn:focus-visible{
   background: var(--c4);
+  transform:translateY(-2px);
+  box-shadow:0 12px 22px rgba(39,68,126,.14);
+}
+
+.optionBtn:active{
+  transform:translateY(1px);
+  box-shadow:0 5px 12px rgba(39,68,126,.12);
 }
 
 .optionBtn.selected{
   background: linear-gradient(135deg, var(--c2), var(--c5));
   color:#fff;
   border-color: transparent;
+  animation:selectedPulse .22s ease-out both;
 }
 
 .inputAnswerWrap{
@@ -2672,12 +2719,24 @@ h1{
   background:#f8fdff;
   box-shadow:0 3px 8px #00000010;
   touch-action:manipulation;
+  transition:transform .14s ease, filter .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+
+.phaseBtn:hover:not(:disabled){
+  transform:translateY(-2px);
+  filter:brightness(1.04);
+  box-shadow:0 6px 14px rgba(28,67,121,.14);
+}
+
+.phaseBtn:active:not(:disabled){
+  transform:translateY(1px);
 }
 
 .phaseBtn.active{
   border-color: #575ddb;
   background: linear-gradient(180deg, #7a89ff, #606ddf);
   color:#fff;
+  animation:selectedPulse .22s ease-out both;
 }
 
 .phaseBtn:disabled{
@@ -3020,6 +3079,17 @@ h1{
   color:#1d3151;
   font-size:15px;
   box-shadow:0 3px 0 rgba(40,76,130,.08);
+  transition:transform .14s ease, filter .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+
+.gameScreen .phaseBtn:hover:not(:disabled){
+  transform:translateY(-2px);
+  filter:brightness(1.04);
+  box-shadow:0 6px 0 rgba(40,76,130,.08), 0 12px 18px rgba(28,67,121,.12);
+}
+
+.gameScreen .phaseBtn:active:not(:disabled){
+  transform:translateY(1px);
 }
 
 .gameScreen .phaseBtn.active{
@@ -3105,6 +3175,7 @@ h1{
   border-radius:18px;
   border:2px dashed #6375f2;
   background:#fff;
+  transition:transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease;
 }
 
 .gameScreen .group-title{
@@ -3161,6 +3232,7 @@ h1{
   border-radius:18px;
   border:2px dashed rgba(103,154,238,.38);
   background:#eaf4ff;
+  transition:border-color .16s ease, box-shadow .16s ease;
 }
 
 .gameScreen .dropzone{
@@ -3211,6 +3283,51 @@ h1{
 .gameScreen .optionBtn{
   min-height:58px;
   border-radius:16px;
+}
+
+.gameScreen .optionBtn:hover,
+.gameScreen .optionBtn:focus-visible{
+  border-color:#5966d7;
+}
+
+@keyframes tokenLift{
+  from{
+    opacity:.75;
+    transform:translate(-50%, -50%) scale(.88);
+  }
+  to{
+    opacity:.96;
+    transform:translate(-50%, -50%) scale(1.06);
+  }
+}
+
+@keyframes selectedPulse{
+  0%{ transform:scale(.98); }
+  60%{ transform:scale(1.025); }
+  100%{ transform:scale(1); }
+}
+
+@keyframes feedbackPop{
+  0%{ transform:scale(.96); opacity:.7; }
+  70%{ transform:scale(1.04); opacity:1; }
+  100%{ transform:scale(1); opacity:1; }
+}
+
+@keyframes feedbackShake{
+  0%, 100%{ transform:translateX(0); }
+  25%{ transform:translateX(-4px); }
+  75%{ transform:translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,
+  *::before,
+  *::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    scroll-behavior:auto !important;
+    transition-duration:.01ms !important;
+  }
 }
 
 .gameScreen #errorsPanel{
