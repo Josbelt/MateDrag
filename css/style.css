@@ -2186,6 +2186,20 @@ h1{
   filter:brightness(1.05);
 }
 
+.btn:disabled,
+.btn[aria-disabled="true"]{
+  cursor:not-allowed;
+  opacity:.58;
+  filter:grayscale(.35);
+  transform:none;
+  box-shadow:0 3px 0 rgba(24,46,82,.08), 0 8px 14px rgba(31,54,91,.06);
+}
+
+.btn:disabled:hover,
+.btn[aria-disabled="true"]:hover{
+  filter:grayscale(.35);
+}
+
 /* =====================================================
    FEEDBACK
 ===================================================== */
@@ -2962,6 +2976,15 @@ h1{
   color:#fff;
   text-shadow:0 1px 0 rgba(0,0,0,.18);
   box-shadow:0 4px 0 #4d942f, 0 14px 22px rgba(59,103,41,.18);
+}
+
+.gameScreen .btn:disabled,
+.gameScreen .btn[aria-disabled="true"]{
+  cursor:not-allowed;
+  opacity:.55;
+  filter:grayscale(.45) saturate(.75);
+  transform:none;
+  box-shadow:0 3px 0 rgba(24,46,82,.09), 0 8px 14px rgba(31,54,91,.08);
 }
 
 .gameScreen .btn.dangerBtn{

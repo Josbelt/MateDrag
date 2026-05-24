@@ -225,6 +225,7 @@ numericAnswerEl.addEventListener("input", () => {
   const value = Number.parseInt(numericAnswerEl.value, 10);
   game.answer = Number.isFinite(value) ? value : 0;
   answerCountEl.textContent = String(game.answer);
+  updateCheckButtonState();
 });
 
 if (showErrorsBtn) {
@@ -489,6 +490,76 @@ function updateAnswerInputVisibility() {
   if (phase === "concreta" && q && q.op.sym === "÷" && numericAnswerLabelEl) {
     numericAnswerLabelEl.textContent = `Por lo tanto ${q.a} dividido para ${q.b} es...`;
   }
+}
+
+function hasTypedNumericAnswer() {
+  return numericAnswerEl.value.trim() !== "";
+}
+
+function getGraphicCompletion(q) {
+  const countA = drawZoneAEl.querySelectorAll(".draw-shape:not(.preview)").length;
+  const countB = drawZoneBEl.querySelectorAll(".draw-shape:not(.preview)").length;
+  const removed = drawZoneAEl.querySelectorAll(".draw-shape.removed:not(.preview)").length;
+
+  if (!q) {
+    return { countA, countB, removed, requiredA: 0, requiredB: 0 };
+  }
+
+  if (q.op.sym === "-") {
+    return { countA, countB, removed, requiredA: q.a, requiredB: 0, requiredRemoved: q.b };
+  }
+  if (q.op.sym === "×") {
+    return { countA, countB, removed, requiredA: q.a, requiredB: q.a };
+  }
+  if (q.op.sym === "÷") {
+    return { countA, countB, removed, requiredA: q.correct, requiredB: q.correct };
+  }
+  return { countA, countB, removed, requiredA: q.a, requiredB: q.b };
+}
+
+function canCheckCurrentAnswer() {
+  const q = game.questions[game.current];
+  if (!q || game.locked) return false;
+
+  if (phase === "grafica") {
+    const completion = getGraphicCompletion(q);
+    if (!hasTypedNumericAnswer()) return false;
+    if (q.op.sym === "-") {
+      return completion.countA >= completion.requiredA && completion.removed >= completion.requiredRemoved;
+    }
+    return completion.countA >= completion.requiredA && completion.countB >= completion.requiredB;
+  }
+
+  if (phase === "concreta") {
+    if (q.op.sym === "+") {
+      return game.answer >= q.correct;
+    }
+    if (q.op.sym === "-") {
+      const crossed = concreteSubEl.querySelectorAll(".obj-item.crossed").length;
+      return crossed >= q.b;
+    }
+    if (q.op.sym === "×") {
+      const total = groupCounts.reduce((sum, count) => sum + count, 0);
+      return total >= q.groupCount * q.groupSize;
+    }
+    if (q.op.sym === "÷") {
+      const total = groupCounts.reduce((sum, count) => sum + count, 0);
+      return total >= q.a;
+    }
+  }
+
+  if (phase === "simbolica" || phase === "complementaria") {
+    return Boolean(optionsWrapEl.querySelector(".optionBtn.selected"));
+  }
+
+  return game.answer > 0;
+}
+
+function updateCheckButtonState() {
+  if (!checkBtnEl) return;
+  const canCheck = canCheckCurrentAnswer();
+  checkBtnEl.disabled = !canCheck;
+  checkBtnEl.setAttribute("aria-disabled", canCheck ? "false" : "true");
 }
 
 function createEmptyPhaseBuckets() {
@@ -2097,11 +2168,13 @@ function updateGraphicCounts() {
     const removed = drawZoneAEl.querySelectorAll(".draw-shape.removed:not(.preview)").length;
     drawCountAEl.textContent = String(countA);
     drawCountBEl.textContent = String(removed);
+    updateCheckButtonState();
     return;
   }
 
   drawCountAEl.textContent = String(countA);
   drawCountBEl.textContent = String(countB);
+  updateCheckButtonState();
 }
 
 function clearGraphicWorkspace() {
@@ -2324,6 +2397,7 @@ function loadQuestion() {
   answerCountEl.textContent = "0";
   renderAbstractOptions(q);
   clearDropzoneVisuals();
+  updateCheckButtonState();
 }
 
 function loadQuestionConcrete(q) {
@@ -2415,6 +2489,7 @@ function loadQuestionConcrete(q) {
     }
     clearDropzoneVisuals();
   }
+  updateCheckButtonState();
 }
 
 function loadQuestionGrafica(q) {
@@ -2457,6 +2532,7 @@ function loadQuestionGrafica(q) {
   answerCountEl.textContent = "0";
   clearGraphicWorkspace();
   clearDropzoneVisuals();
+  updateCheckButtonState();
 }
 
 function loadQuestionComplementaria(q) {
@@ -2485,6 +2561,7 @@ function loadQuestionComplementaria(q) {
   answerCountEl.textContent = "0";
   renderAbstractOptions(q);
   clearDropzoneVisuals();
+  updateCheckButtonState();
 }
 
 function renderGraphicOp(q) {
@@ -2608,6 +2685,7 @@ function updateConcreteAnswer(q) {
   const crossed = concreteSubEl.querySelectorAll(".obj-item.crossed").length;
   game.answer = Math.max(0, q.a - crossed);
   answerCountEl.textContent = String(game.answer);
+  updateCheckButtonState();
 }
 
 function renderGroupArea(q, opText) {
@@ -2686,6 +2764,7 @@ function updateGroupAnswerCount() {
     game.answer = total;
   }
   answerCountEl.textContent = String(game.answer);
+  updateCheckButtonState();
 }
 
 function clearGroupArea(q) {
@@ -2763,6 +2842,7 @@ function addTokenToAnswer(token) {
 
   dropzoneEl.appendChild(bubble);
   updateDropHintVisibility();
+  updateCheckButtonState();
 }
 
 function clearDropzoneVisuals() {
@@ -2803,11 +2883,16 @@ function clearAnswer() {
   }
   feedbackEl.textContent = "";
   feedbackEl.className = "feedback";
+  updateCheckButtonState();
 }
 
 function checkAnswer() {
-  if (game.locked) return;
+  if (game.locked || !canCheckCurrentAnswer()) {
+    updateCheckButtonState();
+    return;
+  }
   game.locked = true;
+  updateCheckButtonState();
   const q = game.questions[game.current];
   let ok = game.answer === q.correct;
   let customFeedback = "";
